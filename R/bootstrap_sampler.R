@@ -9,7 +9,7 @@
 #' @param n number of bootstrap samples that will be created
 #'
 #' @return a list
-#' @import purrr map
+#' @importFrom purrr map
 #'
 #' @examples
 #'

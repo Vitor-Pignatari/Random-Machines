@@ -2,3 +2,12 @@
 
 S3method(predict,randomMachinesClassifierClass)
 export(randomMachinesClassifier)
+importFrom(dplyr,count)
+importFrom(dplyr,group_by)
+importFrom(dplyr,mutate)
+importFrom(dplyr,sample_n)
+importFrom(dplyr,select)
+importFrom(magrittr,"%>%")
+importFrom(purrr,map)
+importFrom(tidyr,complete)
+importFrom(tidyr,pivot_wider)

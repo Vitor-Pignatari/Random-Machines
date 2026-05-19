@@ -10,7 +10,7 @@
 #' @param alpha temperature/slope for the exponential scaling
 #'
 #' @return a Nearest-Enemy sampled data.frame
-#' @import dplyr sample_n
+#' @importFrom dplyr sample_n
 #'
 #' @examples
 nearest_enemy_sampling <- function(data, y_var, final_sample_size, alpha = 1) {

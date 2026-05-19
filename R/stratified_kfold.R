@@ -7,7 +7,6 @@
 #' @param y
 #'
 #' @return
-#' @export
 #'
 #' @examples
 stratified_kfold <- function(df, K = 5, y) {

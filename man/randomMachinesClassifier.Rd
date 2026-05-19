@@ -2,7 +2,7 @@
 % Please edit documentation in R/RM_classifier.R
 \name{randomMachinesClassifier}
 \alias{randomMachinesClassifier}
-\title{Train and evaluate a Random-Machines model}
+\title{Train and evaluate a Random-Machines model. The training can be accelerated using alternative sample methods}
 \usage{
 randomMachinesClassifier(
   formula,
@@ -12,32 +12,44 @@ randomMachinesClassifier(
   kernels = list(kernlab::vanilladot(), kernlab::polydot(2), kernlab::rbfdot(1),
     kernlab::laplacedot(1)),
   loss_function = accuracy,
-  C = 1
+  C = 1,
+  n_wm_models = 10,
+  wm_sample_size_prop = 0.1,
+  worst_prop = 0.8
 )
 }
 \arguments{
-\item{formula}{the classes that will be predicted (must be factor) and the covariables that
-will be used to predict it}
+\item{formula}{A formula specifying the target variable (must be factor) and the predictor variables used in classification.}
 
-\item{data}{the dataset to be used}
+\item{data}{A data frame containing the training dataset}
 
-\item{B}{how many bootstrap samples that will be used in Random-Machines training}
+\item{B}{Number of bootstrap samples that will be used in Random-Machines training}
 
-\item{method}{Wich method will be used to train the model (original, NE for Nearest-Enemy Sampling,
-LS for localized sampling and WSVM for Weak-SVM)}
+\item{method}{Sampling strategy that will be used to train the model
+Available options are:
+\itemize{
+\item \code{"original"}: standard Random-Machines training;
+\item \code{"NE"}: Nearest-Enemy Sampling;
+\item \code{"LS"}: Localized Sampling;
+\item \code{"WSVM"}: Weak-SVM based sampling.
+}}
 
-\item{kernels}{Wich kernels will be used}
+\item{kernels}{List containing the kernels to be used during training}
 
 \item{loss_function}{Define the loss function in the training}
 
-\item{C}{SVM regularization parameter}
+\item{C}{Cost/regularization parameter of the SVM models.}
+
+\item{n_wm_models}{Number of weak SVM models that will be trained in the WSVM method
+to reduce data to probable support vector observations}
+
+\item{wm_sample_size_prop}{Proportion of the dataset that will be used to train each weak SVM model}
+
+\item{worst_prop}{Proportion of observations selected based on prediction entropy among weak SVM models.}
 }
 \value{
 a randomMachinesClassifierClass with the trained model, metrics, etc.
 }
 \description{
-Train and evaluate a Random-Machines model
-}
-\examples{
-randomMachinesClassifier()
+Train and evaluate a Random-Machines model. The training can be accelerated using alternative sample methods
 }
