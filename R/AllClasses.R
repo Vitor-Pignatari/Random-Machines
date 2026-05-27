@@ -3,12 +3,14 @@ NULL
 
 #' Virtual Class containing arguments passed to the main RM function
 setClassUnion("NumOrFactor", c("numeric", "factor"))
+
 setClass(
-    Class    = "RMSpecs",
+  Class    = "RMSpecs",
   contains = "VIRTUAL",
   slots    = list(
     x               = "data.frame",
     y               = "NumOrFactor",
+    task            = "character",
     kernels         = "list",
     B               = "numeric",
     lambda_metric   = "function", # Will require at least virtual class
@@ -18,13 +20,11 @@ setClass(
   )
 )
 
-
 #'
 setClass("KernelData", slots = list())
 
 #'
 setClass("KernelModels", slots = list())
-
 
 #'
 
@@ -52,7 +52,7 @@ setClass(
 )
 
 setValidity(
-  Class = "KernelProb",
+  Class = "KernelLambdas",
   method = function(object) {
     ifelse(
       all(sapply(object@models, function(x) class(x) == "ksvm")),
@@ -61,10 +61,6 @@ setValidity(
     )
   }
 )
-
-KernelProb <- function(RMSpecs){
-  new("KernelProb")
-}
 
 #' An S4 class representing a user profile
 #'
@@ -135,12 +131,12 @@ setClass(
 #'
 #' @slot omega A numeric vector containing final model weights
 
-setClass(
-  "RMPredictor",
-  slots = list(
-    omega = "numeric"
-  )
-)
+#setClass(
+#  "RMPredictor",
+#  slots = list(
+#    omega = "numeric"
+#  )
+#)
 
 #' An S4 class representing a fitted Random Machines model
 #' This object will store the RM lifecycle progress
@@ -155,6 +151,7 @@ setClass(
   "FittedRM",
   slots = list(
     specs = "RMSpecs",
+    task = "task",
     lambda_r = "KernelProb",
     bs_samples = "BootSamples",
     boot_models = "BootModels",
