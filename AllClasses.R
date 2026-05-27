@@ -1,19 +1,32 @@
+#' @include AllGenerics.R
+NULL
+
 #' Virtual Class containing arguments passed to the main RM function
 setClassUnion("NumOrFactor", c("numeric", "factor"))
 setClass(
-  Class = "RMSpecs",
-  slots = list(
-    x = "data.frame",
-    y = "NumOrFactor",
-    kernels = "list",
-    B = "numeric",
-    lambda_metric = "function", # Will require at least virtual class
+    Class    = "RMSpecs",
+  contains = "VIRTUAL",
+  slots    = list(
+    x               = "data.frame",
+    y               = "NumOrFactor",
+    kernels         = "list",
+    B               = "numeric",
+    lambda_metric   = "function", # Will require at least virtual class
     lambda_function = "function", # This one also has constraints
-    omega_metric = "function", # This one as well
-    omega_function = "function"
-  ),
-  contains = "VIRTUAL"
+    omega_metric    = "function", # This one as well
+    omega_function  = "function"
+  )
 )
+
+
+#'
+setClass("KernelData", slots = list())
+
+#'
+setClass("KernelModels", slots = list())
+
+
+#'
 
 #' Internal S4 class for RM 1st stage representation
 #'
@@ -23,12 +36,12 @@ setClass(
 #' @slot kprobs resulting probabilities
 #'
 setClass(
-  Class = "KernelProb",
+  Class = "KernelLambdas",
   slots = list(
-    models = "list",
-    splits = "matrix",
-    errors = "matrix",
-    kprobs = "numeric"
+    models  = "list",
+    splits  = "matrix",
+    loss    = "matrix",
+    lambdas = "numeric"
   ),
   prototype = list(
     models = list(),
@@ -46,8 +59,7 @@ setValidity(
       TRUE,
       "'models' must be a list of objects of class 'ksvm'"
     )
-  },
-  proto
+  }
 )
 
 KernelProb <- function(RMSpecs){
@@ -64,9 +76,9 @@ KernelProb <- function(RMSpecs){
 setClass(
   Class = "BootSamples",
   slots = list(
-    data = "data",
+    data      = "data",
     resamples = "matrix",
-    boot_fun = "function",
+    boot_fun  = "function",
     boot_args = "list"
   )
 )
@@ -98,10 +110,12 @@ BootSamples <- function(bsfun, bsargs) {
 setClass(
   Class = "BootModels",
   slots = list(
-    name = "character",
-    age = "numeric"
+    models = "list",
+    data   = "list"
   )
 )
+
+# Maybe both of the following could be mixed into a single class. Won't oppose.
 
 #' An S4 class representing a user profile
 #'
@@ -109,18 +123,18 @@ setClass(
 #' @slot age An integer representing the user's RandomMachinesge.
 #'
 setClass(
-  Class = "OOBLoss",
+  Class = "BootOmega",
+  contains = "BootModels",
   slots = list(
-    name = "character",
-    age = "numeric"
+    loss = "numeric",
+    omega = "numeric"
   )
 )
 
 #' An S4 class representing a user profile
 #'
-#' @slot name A character string representing the user's name.
-#' @slot age An integer representing the user's age.
-#'
+#' @slot omega A numeric vector containing final model weights
+
 setClass(
   "RMPredictor",
   slots = list(
