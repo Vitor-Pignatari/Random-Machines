@@ -31,11 +31,11 @@ setClass(
 setClass(
   Class = "KernelData",
   slots = c(
-    data = "character",
+    data     = "list",
     splitfun = "function"
   ),
   prototype = list(
-    data = list(),
+    data     = list(),
     splitfun = function(x){}
   )
 )
@@ -81,10 +81,10 @@ setClass(
     lambdas = "numeric"
   ),
   prototype = list(
-    models = list(),
-    splits = matrix(1:10),
-    loss = matrix(1:10),
-    kprobs = 1:10
+    models  = list(),
+    splits  = matrix(1:10),
+    loss    = matrix(1:10),
+    lambdas = 1:10
   )
 )
 
@@ -164,17 +164,6 @@ setClass(
   )
 )
 
-#' An S4 class representing a user profile
-#'
-#' @slot omega A numeric vector containing final model weights
-
-# setClass(
-#  "RMPredictor",
-#  slots = list(
-#    omega = "numeric"
-#  )
-# )
-
 #' An S4 class representing a fitted Random Machines model
 #' This object will store the RM lifecycle progress
 #'
@@ -185,10 +174,10 @@ setClass(
 #' @slot omega_pred
 #'
 setClass(
-  "FittedRM",
+  Class = "FittedRM",
   slots = list(
     specs = "RMSpecs",
-    lambdas = "KernelProb",
+    lambdas = "KernelLambdas",
     bs_samples = "BootSamples",
     boot_models = "BootModels",
     boot_omega = "BootOmega"

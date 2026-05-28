@@ -17,3 +17,12 @@ setGeneric("lambdaCalc", function(metrics) standardGeneric("lambdaCalc"))
 #'
 #' @param metrics numeric vector of size B
 setGeneric("omegaCalc", function(metrics) standardGeneric("omegaCalc"))
+#' Methods to display information
+#'
+#' Description.
+#'
+#' @param object A description of the argument.
+#' @return What it returns.
+setGeneric("displayInfo", function(object, ...) standardGeneric("displayInfo"))
+
+
