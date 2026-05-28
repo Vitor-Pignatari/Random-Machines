@@ -1,8 +1,7 @@
 #' Display user information
 #'
 #' @param object An S4 object.
-#' @export
-setGeneric("calcLambdas", function(object) standardGeneric("calcLambdas"))
+#' @export setGeneric("calcLambdas", function(object) standardGeneric("calcLambdas"))
 
 #' Display user information
 #'

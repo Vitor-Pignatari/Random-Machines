@@ -5,9 +5,9 @@ NULL
 setClassUnion("NumOrFactor", c("numeric", "factor"))
 
 setClass(
-  Class    = "RMSpecs",
+  Class = "RMSpecs",
   contains = "VIRTUAL",
-  slots    = list(
+  slots = list(
     x               = "data.frame",
     y               = "NumOrFactor",
     task            = "character",
@@ -20,13 +20,50 @@ setClass(
   )
 )
 
+#' iInitial model training data
 #'
-setClass("KernelData", slots = list())
+#' training data splits and validation setequal
+#'
+#' @slot data list of training data splits
+#' @slot splitfun data splitting function
+#'
+#' @name KernelData
+setClass(
+  Class = "KernelData",
+  slots = c(
+    data = "character",
+    splitfun = "function"
+  ),
+  prototype = list(
+    data = list(),
+    splitfun = function(x){}
+  )
+)
 
-#'
-setClass("KernelModels", slots = list())
 
+#' Trained models for each KernelData
 #'
+#' Models (one per kernel) fitted to specified splits (or no split)
+#'
+#' @slot models list containing all trained models
+#' @slot data   list of data splits each training process used
+setClass(
+  Class = "KernelModels",
+  slots = c(
+    models = "list",
+    data   = "list"
+  ),
+  prototype = list(
+    models = list(),
+    data   = list()
+  )
+)
+
+#' @describeIn KernelModels validator
+setValidity("KernelModels", function(object) {
+  TRUE
+})
+
 
 #' Internal S4 class for RM 1st stage representation
 #'
@@ -46,8 +83,8 @@ setClass(
   prototype = list(
     models = list(),
     splits = matrix(1:10),
-    errors = matrix(1:10),
-    kprobs =  1:10
+    loss = matrix(1:10),
+    kprobs = 1:10
   )
 )
 
@@ -122,21 +159,23 @@ setClass(
   Class = "BootOmega",
   contains = "BootModels",
   slots = list(
-    loss = "numeric",
+    loss  = "numeric",
     omega = "numeric"
   )
 )
+
+
 
 #' An S4 class representing a user profile
 #'
 #' @slot omega A numeric vector containing final model weights
 
-#setClass(
+# setClass(
 #  "RMPredictor",
 #  slots = list(
 #    omega = "numeric"
 #  )
-#)
+# )
 
 #' An S4 class representing a fitted Random Machines model
 #' This object will store the RM lifecycle progress

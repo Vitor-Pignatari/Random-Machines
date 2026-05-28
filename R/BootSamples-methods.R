@@ -9,3 +9,5 @@ setMethod(
     cat("Name:", object@name, "\nAge:", object@age, "\n")
   }
 )
+
+
