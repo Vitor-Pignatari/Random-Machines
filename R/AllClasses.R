@@ -20,7 +20,7 @@ setClass(
   )
 )
 
-#' iInitial model training data
+#' Initial model training data
 #'
 #' training data splits and validation setequal
 #'
@@ -88,6 +88,7 @@ setClass(
   )
 )
 
+#' @describeIn KernelLambdas validator
 setValidity(
   Class = "KernelLambdas",
   method = function(object) {
@@ -109,14 +110,14 @@ setValidity(
 setClass(
   Class = "BootSamples",
   slots = list(
-    data      = "data",
-    resamples = "matrix",
-    boot_fun  = "function",
-    boot_args = "list"
+    boot_samples = "matrix",
+    boot_oob     = "list",
+    boot_fun     = "function",
+    boot_args    = "list"
   )
 )
 
-### Class Validator
+##' @describeIn BootSamples validator
 setValidity(
   Class = "BootSamples",
   method = function(object) {
@@ -143,8 +144,7 @@ BootSamples <- function(bsfun, bsargs) {
 setClass(
   Class = "BootModels",
   slots = list(
-    models = "list",
-    data   = "list"
+    models = "list"
   )
 )
 
@@ -163,8 +163,6 @@ setClass(
     omega = "numeric"
   )
 )
-
-
 
 #' An S4 class representing a user profile
 #'
@@ -190,11 +188,9 @@ setClass(
   "FittedRM",
   slots = list(
     specs = "RMSpecs",
-    task = "task",
-    lambda_r = "KernelProb",
+    lambdas = "KernelProb",
     bs_samples = "BootSamples",
     boot_models = "BootModels",
-    oob_loss = "OOBLoss",
-    predictor = "RMPredictor"
+    boot_omega = "BootOmega"
   )
 )

@@ -1,16 +1,19 @@
 #' Display user information
 #'
 #' @param object An S4 object.
-#' @export setGeneric("calcLambdas", function(object) standardGeneric("calcLambdas"))
-
-#' Display user information
-#'
-#' @param object An S4 object.
 #' @export
-setGeneric("displayInfo", function(object) standardGeneric("displayInfo"))
+setGeneric("randomMachines", function(x, ...) standardGeneric("randomMachines"))
 
-#' Display user information
+#' Lambda calculation
 #'
-#' @param object An S4 object.
-#' @export
-setGeneric("rmFit", function(x, y, ...) standardGeneric("rmFit"))
+#' Kernel function sampling probability
+#'
+#' @param metrics numeric vector containing metrics for each kernel function
+setGeneric("lambdaCalc", function(metrics) standardGeneric("lambdaCalc"))
+
+#' Omega calculation
+#'
+#' Final weights of models trained on replicates
+#'
+#' @param metrics numeric vector of size B
+setGeneric("omegaCalc", function(metrics) standardGeneric("omegaCalc"))
