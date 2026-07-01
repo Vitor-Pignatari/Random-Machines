@@ -7,14 +7,19 @@
 \method{predict}{randomMachinesClassifierClass}(rmc_model, newdata, type = "class")
 }
 \arguments{
-\item{rmc_model}{Random-Machines trained model}
+\item{rmc_model}{Random-Machines model that will be used to predict new data}
 
-\item{newdata}{Test dataset containing new observations}
+\item{newdata}{Test dataset containing new data}
 
-\item{type}{class}
+\item{type}{A character informing the required answer
+Available options are:
+\itemize{
+\item \code{"class"}: Will return classes;
+\item \code{"probabilitiies"}: Will return probabilites.
+}}
 }
 \value{
-a vector with the predicted classes
+a vector with the predicted classes or the predicted probabilities
 }
 \description{
 predict a class according to a Random-Machines trained model

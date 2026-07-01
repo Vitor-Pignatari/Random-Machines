@@ -14,11 +14,19 @@ randomMachinesClassifierClass <- setClass("randomMachinesClassifierClass",
                                           ) #Adicionar method? (original, NE, WSVM, LS)
 )
 
+setClass()
+setGeneric()
+setValidity()
+assertthat::assert_that()
+install.packages('assertthat')
+mean()
+data.frame()
 # ============================= Classificador ==================================
 
 # Adicionar identificação da variável como fator (precisa ser fator para ser de classificação)
 # Adicionar verificação de validade de argumentos da função (Data must be a data.frame / B must be numeric)
-# Alterar LOSS Functions para funções do pacote yardstick
+# Alterar loss Functions para funções do pacote yardstick
+# Adicionar method Localized Sampling
 
 #' Train and evaluate a Random-Machines model. The training can be accelerated using alternative sample methods
 #'
@@ -49,7 +57,7 @@ randomMachinesClassifier <- function(
     formula,
     data,
     B = 50,
-    method = 'original',
+    method = 'standard',
     kernels = list(
       kernlab::vanilladot(),
       kernlab::polydot(2),
@@ -69,8 +77,8 @@ randomMachinesClassifier <- function(
   } else {
     stop("formula must be a character or formula")
   }
-  if (!method %in% c('original', 'NE', 'LS', 'WSVM')) { # usar match.arg()?
-    stop('method must be one of "original", "NE", "LS" or "WSVM"')
+  if (!method %in% c('standard', 'NE', 'LS', 'WSVM')) { # usar match.arg()?
+    stop('method must be one of "standard", "NE", "LS" or "WSVM"')
   } # Adicionar verificação da validade dos demais argumentos
 
   target <- as.character(form)[2]
@@ -173,7 +181,7 @@ randomMachinesClassifier <- function(
 
   bs_kernels <- sample(kernels, size = B, replace = TRUE, prob = lambda)
 
-  if (method %in% c('original', 'WSVM')) {
+  if (method %in% c('standard', 'WSVM')) {
 
     bs_models <- map(1:B, function(i) {
       kernlab::ksvm(form, data = data[bs_samples[[i]]$train, ], kernel = bs_kernels[[i]], C = C, prob.model = TRUE)
@@ -213,13 +221,19 @@ randomMachinesClassifier <- function(
 
 # ==================== Preditor (de acordo com o modelo criado) ===================
 
+# Adicionar verificações dos parâmetros dentro da função
+
 #' predict a class according to a Random-Machines trained model
 #'
-#' @param rmc_model Random-Machines trained model
-#' @param newdata Test dataset containing new observations
-#' @param type class
-#'
-#' @return a vector with the predicted classes
+#' @param rmc_model Random-Machines model that will be used to predict new data
+#' @param newdata Test dataset containing new data
+#' @param type A character informing the required answer
+#' Available options are:
+#' \itemize{
+#'   \item \code{"class"}: Will return classes;
+#'   \item \code{"probabilitiies"}: Will return probabilites.
+#' }
+#' @return a vector with the predicted classes or the predicted probabilities
 #' @export
 #'
 #' @examples
