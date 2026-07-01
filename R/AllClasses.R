@@ -12,7 +12,7 @@ setClass(
     y               = "NumOrFactor",
     task            = "character",
     kernels         = "list",
-    B               = "numeric",
+    b               = "numeric",
     lambda_metric   = "function", # Will require at least virtual class
     lambda_function = "function", # This one also has constraints
     omega_metric    = "function", # This one as well
