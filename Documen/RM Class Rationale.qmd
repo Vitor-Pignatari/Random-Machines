@@ -1,0 +1,167 @@
+---
+title: "RM Class rationale"
+format: html
+editor: visual
+---
+
+# Estrutura
+
+## RM Fitted
+
+-   RMSpecs
+
+    Lista: contém todos os argumentos e "argumentos validados" sobre a função
+
+-   KernelLambdas
+
+    Contém todas as probabilidades de seleção de kernel
+
+    -   Restrições:
+
+        Soma 1
+
+        Tamanho K
+
+        vetor de numeric()
+
+-   BootSamples
+
+    Contém uma lista com todas as amostras utilizadas para treinamento dos B modelos e oob amostras utilizadas para teste dos modelos
+
+    -   Restrições:
+
+        Lista, contendo a matriz de indices de amostras e matriz de indices OOB.
+
+-   BootModels
+
+    Contém os B modelos treinados
+
+    -   Restrições:
+
+        Lista contendo elementos ksvm(modelos svm treinados)
+
+-   BootOmega
+
+    Vetor contendo os pesos de cada modelo baseado na métrica
+
+    -   Restrições:
+
+        Vetor de numeric()
+
+        -   Classificação: Não há restrições adicionais
+
+        -   Regressão: A soma deve ser igual a 1
+
+## Virtual Class (RMSpecs)
+
+-   x
+
+    Data-frame das covariáveis
+
+-   y
+
+    Vetor de respostas (Fator ou numérico)
+
+-   task
+
+    character() contendo a tarefa ('regression', 'binary', 'multiclass')
+
+-   kernels
+
+    Vetor dos kernels do kernalb
+
+-   b
+
+    Número de reamostras de Bootstrap. integer()
+
+-   lambda_metric
+
+    function(real, predito), deve retornar uma métrica
+
+-   lambda_function
+
+    function(k), deve retornar um vetor de tamanho
+
+-   omega_metric
+
+    function(real, predito), deve retornar uma métrica
+
+-   omega_function
+
+    function(k), deve retornar um vetor de pesos
+
+## Kernel Samples
+
+-   data
+
+    data.frame() conténdo os dados de treinamento
+
+-   splitfun
+
+    function(df), que retornará uma lista conténdo a matriz de amostra e a matirz indicadora dos OOB
+
+## Kernel Models
+
+-   models
+
+    list() contendo os modelos treinados
+
+-   data
+
+    list() conténdo a matriz de amostras de cada modelo e a matriz indicadora das OOB
+
+## Kernel Lambdas
+
+-   models
+
+    list() contendo os modelos treinados
+
+-   splits
+
+    list() conténdo a matriz de amostras de cada modelo e a matriz indicadora das OOB
+
+-   loss
+
+    function(real, predito), deve retornar uma métrica
+
+-   probabilizer
+
+    function(a) que transforma a métrica de cada modelo em uma probabilidade
+
+-   lambdas
+
+    vetor de numeric() contendo a probabilidade de seleção de cada Kernel (deve somar 1)
+
+## Boot Samples
+
+-   boot_data
+
+    list() contendo a matriz de reamostras e a matriz indicadora OOB
+
+-   boot_args
+
+    integer informando quantas reamostras serão realizadas
+
+## Boot Models
+
+-   models
+
+    list() contendo os B modelos treinados
+
+-   boot_data
+
+    list() contendo a matriz de reamostras e a matriz indicadora OOB
+
+## Boot Omegas
+
+-   loss
+
+    function(verdadeiro, predito) que retornará as métricas para cada modelo
+
+-   weighter
+
+    function(metrics) que irá atribuir os pesos de cada modelo
+
+-   omegas
+
+    vetor numeric() contendo os pesos de cada modelo B
