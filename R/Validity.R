@@ -144,3 +144,34 @@ setValidity(
     
   }
 )
+
+setValidity(
+  Class = "KernelData", 
+  function(object){
+    
+    errors <- character()
+    
+    if (!is.function(object@splitfun)) {
+      errors <- c(errors, "'splitfun' must be a function")
+    } else {
+      
+      if (!all(c('x', 'b') %in% names(formals(object@splitfun)))) {
+        errors <- c(errors, "'splitfun' must have the arguments 'x' and 'b'")
+      } else {
+        
+        res <- tryCatch(
+          object@splitfun(iris, 5),
+          error = function(e) NULL
+        )
+        
+        if (is.null(res)) {
+          
+        }
+        
+         
+      }
+      
+    }
+    
+  }
+)
