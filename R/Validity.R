@@ -1,139 +1,167 @@
-setValidity(Class = "RMSpecs", function(object) {
-  # df
-  if (is.null(object@x)) {
-    errors <- c(errors, "'x' must be provided")
+setValidity(
+  Class = "RMSpecs", 
+  function(object){
     
-  } else {
-    if (!is.data.frame(object@x)) {
-      errors <- c(errors, "'x' must be a data frame")
-      
+    if (nrow(object@x) < 5) {
+      return("'x' must must have more than 4 observations")
+    }
+    
+    # task
+    if (!(object@task %in% c('regression', 'binary', 'multiclass'))) {
+      return("'task' must be one of : 'regression', 'binary', 'multiclass'")
+    }
+    
+    # task
+    tasks <- c('regression' = 'numeric', 'binary' = 'factor', 'multiclass' = 'factor')
+    
+    
+    if(class(object@y) !=  tasks[object@task]){
+      return(paste0("Task ", object@task, "is not compatible with object of class", class(object@y)))
+    }
+    
+    # lambda metric -----------------------------------------------------------
+    
+    if (!all(c('truth', 'estimate') %in% names(formals(object@lambdaMetric)))) {
+      return("'lambdaMetric' must have the arguments 'truth' and 'estimate'")
+    }
+    
+    if (object@task %in% c('binary', 'multiclass')) {
+      # lambda metrics - classification
+      res <- tryCatch(
+        expr = object@lambdaMetric(
+          truth = as.factor(c(1, 2, 1, 2)),
+          estimate = as.factor(c(1, 2, 2, 2))
+        ),
+        error = function(e) {
+          e
+        }
+      )
     } else {
-      if (nrow(object@x) < 5) {
-        errors <- c(errors, "'x' must must have more than 4 observations")
-      }
-    }
-  }
-  
-  if (is.null(object@y)) {
-    errors <- c(errors, "'y' must be provided")
-  } else {
-    if (!is.numeric(object@y) & !is.factor(object@y)) {
-      errors <- c(errors, "'y' must be numeric or factor")
+      res <- tryCatch(
+        expr = object@lambdaMetric(
+          truth = rnorm(4),
+          estimate = rnorm(4)
+        ),
+        error = function(e) {
+          e
+        }
+      )
     }
     
-    # Incluir validação para y ser válido para as loss functions (lambda e omega)
-    
-  }
-  
-  # task
-  tasks <- c('regression' = 'numeric', 'binary' = 'factor', 'multiclass' = 'factor')
-  
-  if(class(object@y) !=  tasks[object@task]){
-    return(paste0("Task ", object@task, "is not compatible with object of class", class(object@y)))
-  }
-  
-  # kernels
-  
-  # Verificar Kernels válidos pelo kernlab
-  # if () {
-  #   errors <- c(errors, "'kernels' must be a valid kernlab function")
-  # }
-  
-  # b
-  if (length(object@b) > 1) {
-    return("'b' must have length 1")
-  }
-  
-  if (!is.integer(object@b)) {
-    return("'b' must be an integer")
-  }
-  
-  
-  
-  # lambda metrics
-  
-  if (!is.function(object@lambda_metric)) {
-    errors <- c(errors, "'lambda_metric' must be a function")
-  } else {
-    if (!all(c('truth', 'estimate') %in% names(formals(object@lambda_metric)))) {
-      errors <- c(errors,
-                  "'lambda_metric' must have the arguments 'truth' and 'estimate'")
+    if (inherits(res, "error")) {
+      return("error evaluating 'lambdaMetric'. Must be a valid function")
     }
     
-  }
-  
-  # deve estar de acordo com o tipo da variável resposta (classificação / regressão)
-  
-  # lambda function
-  
-  if (!is.function(object@lambda_function)) {
-    errors <- c(errors, "'lambda_function' must be a function")
-  } else {
+    if (!is.numeric(res)) {
+      return("'lambdaMetric' must return numeric values")
+    }
+    
+    if (is.na(res)) {
+      return("error evaluating 'lambdaMetric'. Must be a valid function")
+    }
+    
+    # lambda function ---------------------------------------------------------
+    
     res <- tryCatch(
-      object@lambda_function(rnorm(50)),
-      error = function(e)
-        NULL
+      object@lambdaFunction(rnorm(50)),
+      error = function(e) NULL
     )
     
     if (is.null(res)) {
-      errors <- c(errors, "'lambda_function' could not be evaluated.")
-    } else {
-      if (!is.numeric(res))
-        errors <- c(errors, "'lambda_function' must return a numeric vector.")
-      
-      if (length(res) != 50)
-        errors <- c(errors,
-                    "'lambda_function' must return a vector with the same length as the input.")
-      
-      if (!isTRUE(all.equal(sum(res), 1)))
-        errors <- c(errors,
-                    "'lambda_function' must return values whose sum is 1.")
+      return("'lambdaFunction' could not be evaluated.")
     }
     
-  }
-  
-  # omega metric
-  
-  if (!is.function(object@omega_metric)) {
-    errors <- c(errors, "'omega_metric' must be a function")
-  } else {
-    if (!all(c('truth', 'estimate') %in% names(formals(object@omega_metric)))) {
-      errors <- c(errors,
-                  "'omega_metric' must have the arguments 'truth' and 'estimate'")
+    if (!is.numeric(res)) {
+      return("'lambdaFunction' must return a numeric vector.")
     }
     
-  }
-  
-  # omega function
-  
-  if (!is.function(object@omega_function)) {
-    errors <- c(errors, "'omega_function' must be a function")
-  }
-  
-})
-
-setValidity(Class = "KernelData", function(object) {
-  errors <- character()
-  
-  if (!is.function(object@splitfun)) {
-    errors <- c(errors, "'splitfun' must be a function")
-  } else {
-    if (!all(c('x', 'b') %in% names(formals(object@splitfun)))) {
-      errors <- c(errors, "'splitfun' must have the arguments 'x' and 'b'")
+    if (length(res) != 50) {
+      return("'lambdaFunction' must return a vector with the same length as the input.")
+    }
+    
+    if (!isTRUE(all.equal(sum(res), 1))) {
+      return("'lambdaFunction' must return values whose sum is 1.")
+    }
+    
+    # omega metric ------------------------------------------------------------
+    
+    if (!all(c('truth', 'estimate') %in% names(formals(object@omegaMetric)))) {
+      return("'omegaMetric' must have the arguments 'truth' and 'estimate'")
+    }
+    
+    if (object@task %in% c('binary', 'multiclass')) {
+      # lambda metrics - classification
+      res <- tryCatch(
+        expr = object@omegaMetric(
+          truth = as.factor(c(1, 2, 1, 2)),
+          estimate = as.factor(c(1, 2, 2, 2))
+        ),
+        error = function(e) {
+          e
+        }
+      )
     } else {
       res <- tryCatch(
-        object@splitfun(iris, 5),
-        error = function(e)
-          NULL
+        expr = object@omegaMetric(
+          truth = rnorm(4),
+          estimate = rnorm(4)
+        ),
+        error = function(e) {
+          e
+        }
       )
-      
-      if (is.null(res)) {
-        
+    }
+    
+    if (inherits(res, "error")) {
+      return("error evaluating 'omegaMetric'. Must be a valid function")
+    }
+    
+    if (!is.numeric(res)) {
+      return("'omegaMetric' must return numeric values")
+    }
+    
+    if (is.na(res)) {
+      return("error evaluating 'omegaMetric'. Must be a valid function")
+    }
+    
+    # omega function ----------------------------------------------------------
+    
+    res <- tryCatch(
+      object@omegaFunction(rnorm(50)),
+      error = function(e) NULL
+    )
+    
+    if (is.null(res)) {
+      return("'omegaFunction' could not be evaluated.")
+    }
+    
+    if (!is.numeric(res)) {
+      return("'omegaFunction' must return a numeric vector.")
+    }
+    
+    if (length(res) != 50) {
+      return("'omegaFunction' must return a vector with the same length as the input.")
+    }
+    
+   if (object$task == 'Regression') {
+      if (!isTRUE(all.equal(sum(res), 1))) {
+        return("'omegaFunction' must return values whose sum is 1.")
       }
-      
-      
+    }
+    
+    # kernels
+    # Verificar Kernels válidos pelo kernlab
+    # if () {
+    #   errors <- c(errors, "'kernels' must be a valid kernlab function")
+    # }
+    
+    # b
+    if (length(object@b) > 1) {
+      return("'b' must have lenght 1")
+    }
+    if (!is.integer(object@b)) {
+      return("'b' must be an integer")
     }
     
   }
-  
-})
+)
