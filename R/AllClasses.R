@@ -110,10 +110,9 @@ setValidity(
 setClass(
   Class = "BootSamples",
   slots = list(
-    boot_samples = "matrix",
-    boot_oob     = "list",
-    boot_fun     = "function",
-    boot_args    = "list"
+    bootData = "list",
+    bootFun     = "function",
+    bootArgs    = "list"
   )
 )
 
@@ -121,19 +120,37 @@ setClass(
 setValidity(
   Class = "BootSamples",
   method = function(object) {
-    if_else(
-      setequal(dim(object@resamples), c(nrow(object@data), object@bsargs@B)),
-      TRUE,
-      "'resamples' must be a matrix of dimensions [nrow(data), B]"
-    )
+    
+    nameVal <- names(object@bootData) == c("Resamples", "OOB")
+    lengthVal <- length(object@bootData) == 2
+    sizeVal <- nrow(object@bootData[["Resamples"]]) == nrow(object@bootData[["OOB"]])
+    classesVal <- setequal(unique(as.character(sapply(object@bootData, class))), c("matrix", "array"))
+    
+    if(!nameVal){
+      return(paste0("bootData must be a named list with names 'Resamples' and 'OOB'"))
+    }
+    
+    if(!lengthVal){
+      return(paste0("bootData must be a named list of size 2"))
+    }
+    
+    if(!sizeVal){
+      return(paste0("bootData must be a named list with names 'Resamples' and 'OOB'"))
+    }
   }
 )
 
 ### Class constructor
 #' @export
-BootSamples <- function(bsfun, bsargs) {
-  samples <- do.call(bsfun, bsargs)
-  new("BootSamples", samples = samples, bsfun = bsfun, bsargs = bsargs)
+BootSamples <- function(bootData,
+                        bootFun = sample,
+                        bootArgs) {
+  final <- new(
+    "BootSamples",
+    bootData = bootData,
+    bootFun = bootFun,
+    bootArgs = bootArgs
+  )
 }
 
 #' An S4 class representing a user profile
