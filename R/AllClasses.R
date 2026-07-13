@@ -27,9 +27,9 @@ setClass(
 #' @slot data list of training data splits
 #' @slot splitfun data splitting function
 #'
-#' @name KernelData
+#' @name KernelSamples
 setClass(
-  Class = "KernelData",
+  Class = "KernelSamples",
   slots = c(
     data     = "list",
     splitfun = "function"
@@ -41,7 +41,7 @@ setClass(
 )
 
 
-#' Trained models for each KernelData
+#' Trained models for each KernelSamples
 #'
 #' Models (one per kernel) fitted to specified splits (or no split)
 #'
@@ -103,7 +103,7 @@ setValidity(
 #' An S4 class representing a user profile
 #'
 #' @slot data
-#' @slot resamples
+#' @slot resamples''''''''''''''''''''''''''
 #' @slot boot_fun
 #' @slot boot_args
 #'
