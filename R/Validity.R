@@ -1,3 +1,8 @@
+# Validações
+
+# Precisa ter como dependência o kernlab
+# Também precisará do twinsvm?
+
 setValidity(
   Class = "RMSpecs", 
   function(object){
@@ -19,7 +24,7 @@ setValidity(
       return(paste0("Task ", object@task, "is not compatible with object of class", class(object@y)))
     }
     
-    # lambda metric -----------------------------------------------------------
+    # lambda metric
     
     if (!all(c('truth', 'estimate') %in% names(formals(object@lambdaMetric)))) {
       return("'lambdaMetric' must have the arguments 'truth' and 'estimate'")
@@ -60,7 +65,7 @@ setValidity(
       return("error evaluating 'lambdaMetric'. Must be a valid function")
     }
     
-    # lambda function ---------------------------------------------------------
+    # lambda function
     
     res <- tryCatch(
       object@lambdaFunction(rnorm(50)),
@@ -83,7 +88,7 @@ setValidity(
       return("'lambdaFunction' must return values whose sum is 1.")
     }
     
-    # omega metric ------------------------------------------------------------
+    # omega metric
     
     if (!all(c('truth', 'estimate') %in% names(formals(object@omegaMetric)))) {
       return("'omegaMetric' must have the arguments 'truth' and 'estimate'")
@@ -124,7 +129,7 @@ setValidity(
       return("error evaluating 'omegaMetric'. Must be a valid function")
     }
     
-    # omega function ----------------------------------------------------------
+    # omega function
     
     res <- tryCatch(
       object@omegaFunction(rnorm(50)),
@@ -163,5 +168,61 @@ setValidity(
       return("'b' must be an integer")
     }
     
+    
+    TRUE
   }
 )
+
+setValidity(
+  Class = "KernelSamples", 
+  function(object){
+    
+    if (length(object@splitfun(iris)) != 2) {
+      return("splitfun must return a list with two elements, the resample matrix and OOB matrix")
+    }
+    
+    TRUE
+  }
+)
+
+setValidity(
+  Class = "KernelModels", 
+  function(object){
+    
+    if (!all(sapply(modelos, function(x){class(x)}) == 'ksvm')) {
+      return("'models' must be a list of objects of class 'ksvm'")
+    }
+    
+    
+    TRUE
+  }
+)
+
+setValidity(
+  Class = "KernelLambdas", 
+  function(object){
+    
+    
+    TRUE
+  }
+)
+
+#helpers
+
+KernelSamples <- function(data, splitfun) {
+  
+  new('KernelSamples', data = data, splitfun = splitfun)
+  
+}
+
+KernelModels <- function(models, data) {
+  
+  new('KernelModels', models = models, data = data)
+  
+}
+
+KernelLambdas <- function(models, splits, loss, probfun, lambdas) {
+  
+  new('KernelLambdas', models = models, splits = splits, loss = loss, probfun = probfun, lambdas = lambdas)
+  
+}
