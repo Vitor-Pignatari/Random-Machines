@@ -347,14 +347,26 @@ KernelLambdas <- function(models, splits, loss, probfun, lambdas) {
 #' @slot resamples''''''''''''''''''''''''''
 #' @slot boot_fun
 #' @slot boot_args
+
+#' An S4 class representing bootrap data
 #'
+#' @slot trainData
+#' @slot bootData
+#' @slot bootArgs
+#' @slot bootFun
 setClass(
   Class = "BootSamples",
   slots = list(
-    boot_samples = "matrix",
-    boot_oob     = "list",
-    boot_fun     = "function",
-    boot_args    = "list"
+    trainData = "data.frame",
+    bootData = "list",
+    bootFun     = "function",
+    bootArgs    = "list"
+  ),
+  prototype = list(
+    trainData = iris,
+    bootData = list("Resamples" = matrix(), "OOB" = matrix),
+    bootFun = rsample::bootstraps,
+    bootArgs    = list()
   )
 )
 
@@ -362,19 +374,59 @@ setClass(
 setValidity(
   Class = "BootSamples",
   method = function(object) {
-    if_else(
-      setequal(dim(object@resamples), c(nrow(object@data), object@bsargs@B)),
-      TRUE,
-      "'resamples' must be a matrix of dimensions [nrow(data), B]"
-    )
+    
+    # object@bootData[["Resamples"]] is n x b rows matrix with values indicating row number in original sample
+    # object@bootData[["OOB"]] is n x b rows matrix with values indicating whether sample is in OOB or not
+    
+    nameVal <- names(object@bootData) == c("Resamples", "OOB")
+    lengthVal <- length(object@bootData) == 2
+    sizeVal <- nrow(object@bootData[["Resamples"]]) == nrow(object@bootData[["OOB"]])
+    classesVal <- setequal(unique(as.character(sapply(object@bootData, class))), c("matrix", "array"))
+    
+    messages <- vector(mode = "character", length = 4)
+    errors <- numeric(length(messages))
+    
+    if(!nameVal){
+      errors[1] <- 1
+      messages[1] <- "Error: bootData must be a named list with named matrixes 'Resamples' and 'OOB'."
+    }
+    
+    if(!lengthVal){
+      errors[2] <- 1
+      messages[2] <- "Error: bootData must be a named list of size 2."
+    }
+    
+    if(!sizeVal){
+      errors[3] <- 1
+      messages[3] <- "Error: number of rows in object bootData 'Resamples' matrix is different than the object in 'OOB Matrix'."
+    }
+    
+    if(!classesVal){
+      errors[4] <- 1
+      messages[4] <- "Error: bootData's elements must be of class 'matrix', 'array'."
+    }
+    
+    if(sum(errors == 0)){
+      return(TRUE)
+    }else{
+      cat(paste(messages, collapse ="\n"))
+      return(FALSE)
+    }
   }
 )
 
 ### Class constructor
 #' @export
-BootSamples <- function(bsfun, bsargs) {
-  samples <- do.call(bsfun, bsargs)
-  new("BootSamples", samples = samples, bsfun = bsfun, bsargs = bsargs)
+BootSamples <- function(bootData,
+                        bootFun = sample,
+                        bootArgs) {
+  final <- new(
+    "BootSamples",
+    bootData = bootData,
+    bootFun = bootFun,
+    bootArgs = bootArgs
+  )
+  return(final)
 }
 
 #' An S4 class representing a user profile
@@ -405,15 +457,18 @@ setClass(
   )
 )
 
-#' An S4 class representing a fitted Random Machines model
-#' This object will store the RM lifecycle progress
+#' Title FittedRM
 #'
-#' @slot kernel_prob
-#' @slot bs_samples
-#' @slot boot_models
-#' @slot oob_loss
-#' @slot omega_pred
+#' @slot specs RMSpecs. 
+#' @slot lambdas KernelLambdas. 
+#' @slot bs_samples BootSamples. 
+#' @slot boot_models BootModels. 
+#' @slot boot_omega BootOmega. 
 #'
+#' @return
+#' @export
+#'
+#' @examples
 setClass(
   Class = "FittedRM",
   slots = list(
@@ -424,3 +479,14 @@ setClass(
     boot_omega = "BootOmega"
   )
 )
+
+### Class constructor
+#' @export
+FittedRM <- function(bootData,
+                        bootFun = sample,
+                        bootArgs) {
+  final <- new(
+    "FittedRM"
+  )
+  return(final)
+}
