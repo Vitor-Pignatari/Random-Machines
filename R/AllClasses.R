@@ -181,15 +181,18 @@ setClass(
   )
 )
 
-#' An S4 class representing a fitted Random Machines model
-#' This object will store the RM lifecycle progress
+#' FittedRM
 #'
-#' @slot kernel_prob
-#' @slot bs_samples
-#' @slot boot_models
-#' @slot oob_loss
-#' @slot omega_pred
+#' @slot specs RMSpecs. 
+#' @slot lambdas KernelLambdas. 
+#' @slot bs_samples BootSamples. 
+#' @slot boot_models BootModels. 
+#' @slot boot_omega BootOmega. 
 #'
+#' @return
+#' @export
+#'
+#' @examples
 setClass(
   Class = "FittedRM",
   slots = list(
