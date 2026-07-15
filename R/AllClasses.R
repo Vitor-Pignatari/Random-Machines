@@ -121,21 +121,42 @@ setValidity(
   Class = "BootSamples",
   method = function(object) {
     
+    # object@bootData[["Resamples"]] is n x b rows matrix with values indicating row number in original sample
+    # object@bootData[["OOB"]] is n x b rows matrix with values indicating whether sample is in OOB or not
+    
     nameVal <- names(object@bootData) == c("Resamples", "OOB")
     lengthVal <- length(object@bootData) == 2
     sizeVal <- nrow(object@bootData[["Resamples"]]) == nrow(object@bootData[["OOB"]])
     classesVal <- setequal(unique(as.character(sapply(object@bootData, class))), c("matrix", "array"))
     
+    messages <- vector(mode = "character", length = 4)
+    errors <- numeric(length(messages))
+    
     if(!nameVal){
-      return(paste0("bootData must be a named list with names 'Resamples' and 'OOB'"))
+      errors[1] <- 1
+      messages[1] <- "Error: bootData must be a named list with named matrixes 'Resamples' and 'OOB'."
     }
     
     if(!lengthVal){
-      return(paste0("bootData must be a named list of size 2"))
+      errors[2] <- 1
+      messages[2] <- "Error: bootData must be a named list of size 2."
     }
     
     if(!sizeVal){
-      return(paste0("bootData must be a named list with names 'Resamples' and 'OOB'"))
+      errors[3] <- 1
+      messages[3] <- "Error: number of rows in object bootData 'Resamples' matrix is different than the object in 'OOB Matrix'."
+    }
+    
+    if(!classesVal){
+      errors[4] <- 1
+      messages[4] <- "Error: bootData's elements must be of class 'matrix', 'array'."
+    }
+    
+    if(sum(errors == 0)){
+      return(TRUE)
+    }else{
+      cat(paste(messages, collapse ="\n"))
+      return(FALSE)
     }
   }
 )
@@ -151,6 +172,7 @@ BootSamples <- function(bootData,
     bootFun = bootFun,
     bootArgs = bootArgs
   )
+  return(final)
 }
 
 #' An S4 class representing a user profile
@@ -181,7 +203,7 @@ setClass(
   )
 )
 
-#' FittedRM
+#' Title FittedRM
 #'
 #' @slot specs RMSpecs. 
 #' @slot lambdas KernelLambdas. 
@@ -203,3 +225,14 @@ setClass(
     boot_omega = "BootOmega"
   )
 )
+
+### Class constructor
+#' @export
+FittedRM <- function(bootData,
+                        bootFun = sample,
+                        bootArgs) {
+  final <- new(
+    "FittedRM"
+  )
+  return(final)
+}
