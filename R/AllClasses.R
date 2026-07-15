@@ -99,23 +99,25 @@ setValidity(
   }
 )
 
-#' An S4 class representing a user profile
+#' An S4 class representing bootrap data
 #'
-#' @slot data
-#' @slot resamples''''''''''''''''''''''''''
-#' @slot boot_fun
-#' @slot boot_args
-#'
+#' @slot trainData
+#' @slot bootData
+#' @slot bootArgs
+#' @slot bootFun
 setClass(
   Class = "BootSamples",
   slots = list(
+    trainData = "data.frame",
     bootData = "list",
     bootFun     = "function",
     bootArgs    = "list"
   ),
   prototype = list(
+    trainData = iris,
+    bootData = list("Resamples" = matrix(), "OOB" = matrix),
     bootFun = rsample::bootstraps,
-    
+    bootArgs    = list()
   )
 )
 
