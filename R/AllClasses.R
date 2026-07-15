@@ -6,17 +6,16 @@ setClassUnion("NumOrFactor", c("numeric", "factor"))
 
 setClass(
   Class = "RMSpecs",
-  contains = "VIRTUAL",
   slots = list(
     x               = "data.frame",
     y               = "NumOrFactor",
     task            = "character",
     kernels         = "list",
     b               = "numeric",
-    lambda_metric   = "function", # Will require at least virtual class
-    lambda_function = "function", # This one also has constraints
-    omega_metric    = "function", # This one as well
-    omega_function  = "function"
+    lambdaMetric   = "function", # Will require at least virtual class
+    lambdaFunction = "function", # This one also has constraints
+    omegaMetric    = "function", # This one as well
+    omegaFunction  = "function"
   )
 )
 
@@ -199,7 +198,7 @@ RMSpecs <- function(
     lambdaMetric = lambdaMetric,
     lambdaFunction = lambdaFunction,
     omegaMetric = omegaMetric,
-    omegaFunction = omegaFunction,
+    omegaFunction = omegaFunction
 ) {
   
   new(
@@ -212,7 +211,7 @@ RMSpecs <- function(
     lambdaMetric = lambdaMetric,
     lambdaFunction = lambdaFunction,
     omegaMetric = omegaMetric,
-    omegaFunction = omegaFunction,
+    omegaFunction = omegaFunction
   )
   
 }
