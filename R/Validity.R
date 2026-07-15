@@ -213,6 +213,33 @@ setValidity(
 
 #helpers
 
+RMSpecs <- function(
+    x = x,
+    y = y,
+    task = task,
+    kernels = kernels,
+    b = b,
+    lambdaMetric = lambdaMetric,
+    lambdaFunction = lambdaFunction,
+    omegaMetric = omegaMetric,
+    omegaFunction = omegaFunction,
+) {
+  
+  new(
+    'RMSpecs', 
+    x = x,
+    y = y,
+    task = task,
+    kernels = kernels,
+    b = b,
+    lambdaMetric = lambdaMetric,
+    lambdaFunction = lambdaFunction,
+    omegaMetric = omegaMetric,
+    omegaFunction = omegaFunction,
+  )
+  
+}
+
 KernelSamples <- function(data, splitfun) {
   
   new('KernelSamples', data = data, splitfun = splitfun)
