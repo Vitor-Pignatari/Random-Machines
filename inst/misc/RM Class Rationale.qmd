@@ -58,6 +58,8 @@ editor: visual
 
     Data-frame das covariáveis
 
+    -   Deve conter mais do que 4 observações
+
 -   y
 
     Vetor de respostas (Fator ou numérico)
@@ -80,7 +82,7 @@ editor: visual
 
 -   lambda_function
 
-    function(k), deve retornar um vetor de tamanho
+    function(k), deve retornar um vetor de tamanho R, que soma 1
 
 -   omega_metric
 
@@ -88,7 +90,7 @@ editor: visual
 
 -   omega_function
 
-    function(k), deve retornar um vetor de pesos
+    function(k), deve retornar um vetor de pesos, deve somar 1 para o caso de regressão
 
 ## Kernel Samples
 
@@ -124,7 +126,7 @@ editor: visual
 
     function(real, predito), deve retornar uma métrica
 
--   probabilizer
+-   probfun
 
     function(a) que transforma a métrica de cada modelo em uma probabilidade
 

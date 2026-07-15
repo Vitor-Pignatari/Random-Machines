@@ -68,7 +68,7 @@ setValidity(
     # lambda function
     
     res <- tryCatch(
-      object@lambdaFunction(rnorm(50)),
+      object@lambdaFunction(runif(50)),
       error = function(e) NULL
     )
     
@@ -177,9 +177,13 @@ setValidity(
   Class = "KernelSamples", 
   function(object){
     
+    # Ad
+    
     if (length(object@splitfun(iris)) != 2) {
       return("splitfun must return a list with two elements, the resample matrix and OOB matrix")
     }
+    # Usar como base o vfold_cv
+    
     
     TRUE
   }
