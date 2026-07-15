@@ -6,7 +6,6 @@ setClassUnion("NumOrFactor", c("numeric", "factor"))
 
 setClass(
   Class = "RMSpecs",
-  contains = "VIRTUAL",
   slots = list(
     x               = "data.frame",
     y               = "NumOrFactor",
@@ -113,6 +112,10 @@ setClass(
     bootData = "list",
     bootFun     = "function",
     bootArgs    = "list"
+  ),
+  prototype = list(
+    bootFun = rsample::bootstraps,
+    
   )
 )
 
