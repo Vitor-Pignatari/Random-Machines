@@ -10,6 +10,7 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 Config/roxygen2/version: 8.0.0
 Collate: 
+    'bootstrap.R'
     'AllGenerics.R'
     'AllClasses.R'
     'BootModels-methods.R'
@@ -19,4 +20,6 @@ Collate:
     'RMPredictor-methods.R'
     'fit-methods.R'
     'predict-methods.R'
+    'random_machines.R'
     'utils.R'
+RoxygenNote: 7.3.1

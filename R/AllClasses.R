@@ -58,7 +58,6 @@ setClass(
   )
 )
 
-#' @describeIn KernelModels validator
 setValidity("KernelModels", function(object) {
   TRUE
 })
@@ -87,7 +86,6 @@ setClass(
   )
 )
 
-#' @describeIn KernelLambdas validator
 setValidity(
   Class = "KernelLambdas",
   method = function(object) {
@@ -99,29 +97,31 @@ setValidity(
   }
 )
 
-#' An S4 class representing bootrap data
+#' An S4 class representing bootsrap data - works with rsample "bootstraps" function by default
 #'
-#' @slot trainData
-#' @slot bootData
-#' @slot bootArgs
-#' @slot bootFun
+#' @slot trainData Training data to have bootstrap samples generated
+#' @slot bootFun Bootstrap function passed into object creation
+#' @slot bootArgs Arguments passed to bootstrap function
+#' @slot bootData Bootstrap data stored after samples are generated
+#' 
+#' @include bootstrap.R
+
 setClass(
   Class = "BootSamples",
   slots = list(
     trainData = "data.frame",
-    bootData = "list",
     bootFun     = "function",
-    bootArgs    = "list"
+    bootArgs    = "list",
+    bootData = "list"
   ),
   prototype = list(
     trainData = iris,
-    bootData = list("Resamples" = matrix(), "OOB" = matrix),
-    bootFun = rsample::bootstraps,
-    bootArgs    = list()
+    bootFun = simple_bs,
+    bootArgs  = list(times = 100),
+    bootData = list("Resamples" = matrix(), "OOB" = matrix())
   )
 )
 
-##' @describeIn BootSamples validator
 setValidity(
   Class = "BootSamples",
   method = function(object) {
@@ -166,18 +166,21 @@ setValidity(
   }
 )
 
-### Class constructor
+#' BootSamples helper constructor
+#' 
+#' @title BootSamples
+#' @param trainData Training data to be passed into object construction
+#' @param bootFun 
+#' @param bootArgs 
+#'
+#' @return placeholder
 #' @export
-BootSamples <- function(bootData,
-                        bootFun = sample,
-                        bootArgs) {
-  final <- new(
-    "BootSamples",
-    bootData = bootData,
-    bootFun = bootFun,
-    bootArgs = bootArgs
-  )
-  return(final)
+#'
+#' @examples placeholder
+
+BootSamples <- function(trainData, bootFun = simple_bs, bootArgs){
+  bootData <- do.call(bootFun, args = bootArgs)
+  new(trainData = trainData, bootData = bootData, bootFun, bootArgs)
 }
 
 #' An S4 class representing a user profile
@@ -216,10 +219,10 @@ setClass(
 #' @slot boot_models BootModels. 
 #' @slot boot_omega BootOmega. 
 #'
-#' @return
+#' @return placeholder
 #' @export
 #'
-#' @examples
+#' @examples placeholder
 setClass(
   Class = "FittedRM",
   slots = list(

@@ -3,15 +3,27 @@
 \docType{class}
 \name{FittedRM-class}
 \alias{FittedRM-class}
-\title{An S4 class representing a user profile}
+\title{Title FittedRM}
+\value{
+placeholder
+}
 \description{
-An S4 class representing a user profile
+Title FittedRM
 }
 \section{Slots}{
 
 \describe{
-\item{\code{omega}}{A numeric vector containing final model weights
-An S4 class representing a fitted Random Machines model
-This object will store the RM lifecycle progress}
+\item{\code{specs}}{RMSpecs.}
+
+\item{\code{lambdas}}{KernelLambdas.}
+
+\item{\code{bs_samples}}{BootSamples.}
+
+\item{\code{boot_models}}{BootModels.}
+
+\item{\code{boot_omega}}{BootOmega.}
 }}
 
+\examples{
+placeholder
+}
