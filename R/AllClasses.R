@@ -105,6 +105,7 @@ setValidity(
 #' @slot bootData Bootstrap data stored after samples are generated
 #' 
 #' @include bootstrap.R
+#' 
 
 setClass(
   Class = "BootSamples",
@@ -117,7 +118,7 @@ setClass(
   prototype = list(
     trainData = iris,
     bootFun = simple_bs,
-    bootArgs  = list(times = 100),
+    bootArgs  = list(B = 100),
     bootData = list("Resamples" = matrix(), "OOB" = matrix())
   )
 )
@@ -129,7 +130,7 @@ setValidity(
     # object@bootData[["Resamples"]] is n x b rows matrix with values indicating row number in original sample
     # object@bootData[["OOB"]] is n x b rows matrix with values indicating whether sample is in OOB or not
     
-    nameVal <- names(object@bootData) == c("Resamples", "OOB")
+    nameVal <- setequal(names(object@bootData), c("Resamples", "OOB"))
     lengthVal <- length(object@bootData) == 2
     sizeVal <- nrow(object@bootData[["Resamples"]]) == nrow(object@bootData[["OOB"]])
     classesVal <- setequal(unique(as.character(sapply(object@bootData, class))), c("matrix", "array"))
@@ -170,17 +171,23 @@ setValidity(
 #' 
 #' @title BootSamples
 #' @param trainData Training data to be passed into object construction
-#' @param bootFun 
-#' @param bootArgs 
+#' @param bootFun Bootstrap function to be applied
+#' @param bootArgs Arguments to bootstrap function
 #'
 #' @return placeholder
 #' @export
 #'
 #' @examples placeholder
 
-BootSamples <- function(trainData, bootFun = simple_bs, bootArgs){
+BootSamples <- function(trainData, bootFun = simple_bs, bootArgs) {
   bootData <- do.call(bootFun, args = bootArgs)
-  new(trainData = trainData, bootData = bootData, bootFun, bootArgs)
+  new(
+    "BootSamples",
+    trainData = trainData,
+    bootData = bootData,
+    bootFun = bootFun,
+    bootArgs = bootArgs
+  )
 }
 
 #' An S4 class representing a user profile

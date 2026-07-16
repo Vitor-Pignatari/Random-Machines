@@ -2,7 +2,6 @@
 
 export(BootSamples)
 export(FittedRM)
-export(my_helper_function)
 export(randomMachines)
 export(simple_bs)
 exportClasses(FittedRM)

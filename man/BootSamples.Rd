@@ -9,9 +9,9 @@ BootSamples(trainData, bootFun = simple_bs, bootArgs)
 \arguments{
 \item{trainData}{Training data to be passed into object construction}
 
-\item{bootFun}{}
+\item{bootFun}{Bootstrap function to be applied}
 
-\item{bootArgs}{}
+\item{bootArgs}{Arguments to bootstrap function}
 }
 \value{
 placeholder

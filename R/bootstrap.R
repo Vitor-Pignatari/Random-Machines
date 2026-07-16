@@ -3,13 +3,14 @@
 #' @title simple_bs
 #' @description Bootstrap, generating in-sample and out-of-sample elements in two lists
 #'
-#' @param [arg_name] [Data type and description of the input]
+#' @param indexes character or string containing either data.frame row names or indexes
+#' @param B scalar representing number of bootstrap samples to generate
 #'
 #' @return List containing column-per-resample matrix for bootstrap samples and indicator matrix for OOB samples matrix
 #'
 #' @examples
-#' # [arg_name] <- c(1, 2, 3)
-#' # simple_bs([arg_name])
+#' # data <- data.frame(a = c(1, 2, 3))
+#' # simple_bs(indexes = row.names(data), B = 100)
 #'
 #' @export
 simple_bs <- function(indexes, B) {

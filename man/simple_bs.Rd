@@ -7,7 +7,9 @@
 simple_bs(indexes, B)
 }
 \arguments{
-\item{[arg_name]}{\link{Data type and description of the input}}
+\item{indexes}{character or string containing either data.frame row names or indexes}
+
+\item{B}{scalar representing number of bootstrap samples to generate}
 }
 \value{
 List containing column-per-resample matrix for bootstrap samples and indicator matrix for OOB samples matrix
@@ -19,7 +21,7 @@ Bootstrap, generating in-sample and out-of-sample elements in two lists
 Simple boostrap function
 }
 \examples{
-# [arg_name] <- c(1, 2, 3)
-# simple_bs([arg_name])
+# data <- data.frame(a = c(1, 2, 3))
+# simple_bs(indexes = row.names(data), B = 100)
 
 }
