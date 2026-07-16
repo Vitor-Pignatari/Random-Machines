@@ -3,9 +3,9 @@
 \docType{class}
 \name{BootSamples-class}
 \alias{BootSamples-class}
-\title{An S4 class representing bootsrap data - works with rsample "bootstraps" function by default}
+\title{An S4 class representing a user profile}
 \description{
-An S4 class representing bootsrap data - works with rsample "bootstraps" function by default
+An S4 class representing a user profile
 }
 \section{Slots}{
 
