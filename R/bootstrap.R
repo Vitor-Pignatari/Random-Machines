@@ -28,3 +28,16 @@ simple_bs <- function(indexes, B) {
   
   return(list("Resamples" = bsmatrix, "OOB" = oob))
 }
+
+reverse_bs <- function(bs_result, original_data){
+  
+  bsmatrix <- apply(bs_result[["Resamples"]], MARGIN = 2, function(x) {
+    original_data[x, ]
+  })
+  
+  oob <- apply(bs_result[["OOB"]], MARGIN = 2, function(x){
+    original_data[x, ]
+  })
+  
+  return(list("Resamples" = bsmatrix, "OOB" = oob))
+}

@@ -183,10 +183,25 @@ setValidity(Class = "RMSpecs", function(object) {
     return("'b' must be an integer")
   }
   
-  
   TRUE
 })
 
+#' RMSpecs constructor helper function
+#'
+#' @param x training dataset
+#' @param y target variable
+#' @param task binary, classification or multiclass
+#' @param kernels list of kernel functions to be used within kernlab
+#' @param b number of bootstrap samples to be used
+#' @param lambdaMetric performance metric for lambda calculation
+#' @param lambdaFunction function to determine kernel sampling probability calculation from lambda metrics 
+#' @param omegaMetric performance metric for omega calculation
+#' @param omegaFunction function to determine weights for each b model's predictions in final prediction
+#'
+#' @returns RMSpecs S4 object
+#'
+#' @examples
+#' 
 RMSpecs <- function(x = x,
                     y = y,
                     task = task,
@@ -195,13 +210,18 @@ RMSpecs <- function(x = x,
                     lambdaMetric = lambdaMetric,
                     lambdaFunction = lambdaFunction,
                     omegaMetric = omegaMetric,
-                    omegaFunction = omegaFunction) {
+                    omegaFunction = omegaFunction
+                    ) {
   new(
     'RMSpecs',
     x = x,
     y = y,
-    task = task,
-    kernels = kernels,
+    task = "binary",
+    kernels = list(
+      kernlab::rbfdot(sigma = 1),
+      kernlab::laplacedot(sigma = 1),
+      kernlab::vanilladot()
+    ),
     b = b,
     lambdaMetric = lambdaMetric,
     lambdaFunction = lambdaFunction,
@@ -249,8 +269,6 @@ KernelSamples <- function(data, splitfun) {
   
 }
 
-
-
 #' Trained models for each KernelSamples
 #'
 #' Models (one per kernel) fitted to specified splits (or no split)
@@ -278,7 +296,6 @@ setValidity(Class = "KernelModels", function(object) {
 
 KernelModels <- function(models, data) {
   new('KernelModels', models = models, data = data)
-  
 }
 
 #' Internal S4 class for RM 1st stage representation
@@ -323,7 +340,6 @@ KernelLambdas <- function(models, splits, loss, probfun, lambdas) {
 
 #' An S4 class representing a user profile
 #'
-#' @slot trainData Training data to have bootstrap samples generated
 #' @slot bootFun Bootstrap function passed into object creation
 #' @slot bootArgs Arguments passed to bootstrap function
 #' @slot bootData Bootstrap data stored after samples are generated
@@ -334,13 +350,11 @@ KernelLambdas <- function(models, splits, loss, probfun, lambdas) {
 setClass(
   Class = "BootSamples",
   slots = list(
-    trainData = "data.frame",
     bootFun     = "function",
     bootArgs    = "list",
     bootData = "list"
   ),
   prototype = list(
-    trainData = iris,
     bootFun = simple_bs,
     bootArgs  = list(B = 100),
     bootData = list("Resamples" = matrix(), "OOB" = matrix())
@@ -421,15 +435,40 @@ BootSamples <- function(trainData, bootFun = simple_bs, bootArgs) {
 
 #' An S4 class representing a user profile
 #'
-#' @slot models A character string representing the user's name.
-#' @slot data An integer representing the user's age.
+#' @slot bootData A character string representing the user's name.
+#' @slot bootPredict An integer representing the user's age.
 #'
 setClass(
   Class = "BootModels", 
   slots = list(
-    models = "list"
+    BootModels = "list",
+    bootPredict = "list",
+    bootMetrics = "matrix",
+  ),
+  prototype = list(
+    bootPredict = list(
+      "Resamples" = matrix(), 
+      "OOB" = matrix()
+    ),
+    bootMetrics = matrix()
   )
 )
+
+#' Helper constructor for BootModels
+#'
+#' @param bootData Result slot from BootSamples
+#' @param models Result slot from KernelLambdas
+#' @param lambdas Result slot from KernelModels
+#'
+#' @returns BootModels S4 object
+#' @export
+#'
+#' @examples
+
+BootModels <- function(trainData, bootData, models, lambdas){
+  resamp_predict <- reverse_bs(bootData = bootData, original_data = trainData)
+  new("BootModels", BootModels = , bootMetrics = models, bootPredict = lambdas)
+}
 
 # Maybe both of the following could be mixed into a single class. Won't oppose.
 
@@ -441,7 +480,10 @@ setClass(
 setClass(
   Class = "BootOmega",
   contains = "BootModels",
-  slots = list(loss  = "numeric", omega = "numeric")
+  slots = list(
+    omegaMetric  = "numeric",
+    omegaFunction = "numeric"
+  )
 )
 
 #' Title FittedRM
