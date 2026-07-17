@@ -222,7 +222,7 @@ RMSpecs <- function(
     lambdaMetric = lambdaMetric,
     lambdaFunction = lambdaFunction,
     omegaMetric = omegaMetric,
-    omegaFunction = omegaFunction,
+    omegaFunction = omegaFunction
 ) {
   
   new(
@@ -235,7 +235,7 @@ RMSpecs <- function(
     lambdaMetric = lambdaMetric,
     lambdaFunction = lambdaFunction,
     omegaMetric = omegaMetric,
-    omegaFunction = omegaFunction,
+    omegaFunction = omegaFunction
   )
   
 }

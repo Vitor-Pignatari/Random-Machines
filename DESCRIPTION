@@ -20,3 +20,6 @@ Collate:
     'fit-methods.R'
     'predict-methods.R'
     'utils.R'
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
