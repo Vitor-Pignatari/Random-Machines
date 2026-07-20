@@ -243,22 +243,22 @@ RMSpecs <- function(x = x,
 setClass(
   Class = "KernelSamples",
   slots = c(
-    data     = "list",
+    data     = "matrix",
     splitfun = "function",
-    splitargs = list()
+    splitargs = "list"
   ),
   prototype = list(
-    data     = list(),
-    splitfun = function(x) {
-    }
+    data     = matrix(),
+    splitfun = function(x) {},
+    splitargs = list()
   )
 )
 
 setValidity(Class = "KernelSamples", function(object) {
   # Ad
   
-  if (length(object@splitfun(iris)) != 2) {
-    return("splitfun must return a list with two elements, the resample matrix and OOB matrix")
+  if (is.matrix(length(do.call(object@splitfun, object@splitargs)))) {
+    return("splitfun must return a indicator matrix of the samples")
   }
   # Usar como base o vfold_cv
   
@@ -266,8 +266,11 @@ setValidity(Class = "KernelSamples", function(object) {
   TRUE
 })
 
-KernelSamples <- function(data, splitfun) {
-  new('KernelSamples', data = data, splitfun = splitfun)
+KernelSamples <- function(data, splitfun, splitargs) {
+  
+  newData <- do.call(splitfun, splitargs)
+  
+  new('KernelSamples', data = newData, splitfun = splitfun, splitargs = splitargs)
   
 }
 
@@ -306,12 +309,13 @@ KernelModels <- function(models, data) {
 setClass(
   Class = "KernelLambdas",
   slots = list(
-    loss    = "matrix",
+    # maybe call loss mettrics or whatever
+    loss    = "numeric",
     lambdas = "numeric"
   ),
   prototype = list(
-    loss    = matrix(1:10),
-    lambdas = 1:10
+    loss    = numeric(10),
+    lambdas = numeric(10)
   )
 )
 

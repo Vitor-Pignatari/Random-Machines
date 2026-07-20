@@ -1,9 +1,6 @@
-require(kernlab)
-require(yardstick)
-
 test_that("'RMSpecs' has instantieted correctly", {
   
-  classe <- RMSpecs(
+  newObject <- RMSpecs(
     x = iris[,1:4],
     y = iris[,5],
     task = 'binary',
@@ -16,11 +13,11 @@ test_that("'RMSpecs' has instantieted correctly", {
     ),
     b = as.integer(15), # change integer validation?
     lambdaMetric = yardstick::accuracy_vec, 
-    lambdaFunction = log_normalize, 
+    lambdaFunction = logNormalize, 
     hyperparams = list(), 
     omegaMetric = yardstick::accuracy_vec,
-    omegaFunction = log_normalize
+    omegaFunction = logNormalize
   )
   
-  expect_true(class(classe) == 'RMSpecs')
+  expect_true(class(newObject) == 'RMSpecs')
 })
