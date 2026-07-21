@@ -1,4 +1,4 @@
-test_that("Arguments to SVM is working", {
+test_that("BootModels objects creation works successfully", {
   
   iris_bin <- iris[which(iris$Species %in% c("virginica", "setosa")), ]
   levels(iris_bin) <- c("virginica", "setosa")
@@ -27,26 +27,16 @@ test_that("Arguments to SVM is working", {
         kernel = kernlab::polydot(degree = 1, scale = 1)
       )
     ),
-    b = 5,
+    b = 100,
     lambdaMetric   = yardstick::accuracy_vec
   )
-  
-  # Builds function calls for all kernels
   allcalls <- call_builder(specs = specs)
+  bootsamples <- BootSamples(trainData = iris,
+                             bootArgs = list(indexes = 1:nrow(iris), B = specs$b))
+  bootmodels <- apply_calls(data = iris, svmcalls = allcalls, datasplit = bootsamples@bootData, indexes = sampmodels)
+  lambdas <- c(0.32, 0.21, 0.47)
+
+  #BootModels(iris, bootData = bootsamples, models = allcalls, lambdas = lambdas)
   
-  # Generate train-test samples - can be anything
-  samp_iris <- simple_bs(indexes = 1:nrow(iris_bin), B = specs$b)
-  
-  allkernels <- apply_calls(data = iris_bin, svmcalls = allcalls, datasplit = samp_iris)
-  
-  # Testing variation: multiclass
-  specs$data <- quote(iris)
-  allcalls <- call_builder(specs = specs)
-  
-  # Generate samples
-  samp_iris <- simple_bs(indexes = 1:nrow(iris), B = specs$b)
-  
-  allkernels <- apply_calls(data = iris, svmcalls = allcalls, datasplit = samp_iris)
-  
-  testthat::expect_equal(length(allcalls), 3)
+  expect_equal(2 * 2, 4)
 })

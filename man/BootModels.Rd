@@ -7,6 +7,8 @@
 BootModels(trainData, bootData, models, lambdas)
 }
 \arguments{
+\item{trainData}{Original training data}
+
 \item{bootData}{Result slot from BootSamples}
 
 \item{models}{Result slot from KernelLambdas}

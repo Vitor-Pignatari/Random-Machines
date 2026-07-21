@@ -428,7 +428,7 @@ setClass(
   ),
   prototype = list(
     bootPredict = list(
-      "train" = matrix(), 
+      "train" = matrix(),
       "test" = matrix()
     ),
     bootMetrics = matrix()
@@ -437,6 +437,7 @@ setClass(
 
 #' Helper constructor for BootModels
 #'
+#' @param trainData Original training data
 #' @param bootData Result slot from BootSamples
 #' @param models Result slot from KernelLambdas
 #' @param lambdas Result slot from KernelModels
@@ -447,28 +448,27 @@ setClass(
 #' @examples placeholder
 
 BootModels <- function(trainData, bootData, models, lambdas) {
-  resamp_predict <- reverse_bs(bootData = bootData, original_data = trainData)
+  
+  sampmodels <- sample(1:length(allcalls), size = specs$b, prob = lambdas, replace = TRUE)
+  bootmodels <- apply_calls(data = iris, svmcalls = allcalls, datasplit = samp_iris, indexes = sampmodels)
+  
   new(
     "BootModels",
-    BootModels = ,
-    bootMetrics = models,
-    bootPredict = lambdas
+    bootModels = bootmodels
   )
 }
 
-# Maybe both of the following could be mixed into a single class. Won't oppose.
-
 #' An S4 class representing a user profile
 #'
-#' @slot name A character string representing the user's name.
-#' @slot age An integer representing the user's RandomMachinesge.
+#' @slot omegaMetrics placeholder
+#' @slot omegaFunction placeholder
 #'
 setClass(
-  Class = "BootOmega",
-  contains = "BootModels",
+  Class = "BootOmegaPredict",
   slots = list(
-    omegaMetric  = "numeric",
-    omegaFunction = "numeric"
+    omegaMetrics  = "numeric",
+    omegaFunction = "numeric",
+    omegaPredictions = 
   )
 )
 

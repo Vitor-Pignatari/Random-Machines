@@ -14,7 +14,7 @@
 #'
 #'
 my_helper_function <- function(arg1, arg2 = NULL) {
-
+  
   # 1. Argument validation (fail fast)
   if (missing(arg1)) {
     stop("Argument 'arg1' is required but missing.")
