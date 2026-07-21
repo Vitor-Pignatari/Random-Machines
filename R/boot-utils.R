@@ -12,7 +12,6 @@
 #' # data <- data.frame(a = c(1, 2, 3))
 #' # simple_bs(indexes = row.names(data), B = 100)
 #'
-#' @export
 simple_bs <- function(indexes, B) {
   
   n <- length(indexes)
@@ -29,6 +28,15 @@ simple_bs <- function(indexes, B) {
   return(list("train" = bsmatrix, "test" = oob))
 }
 
+#' reverse_bs
+#'
+#' @param bs_result placeholder
+#' @param original_data placeholder
+#'
+#' @returns placeholder
+#'
+#' @examples placeholder
+#' 
 reverse_bs <- function(bs_result, original_data){
   
   bsmatrix <- apply(bs_result[["train"]], MARGIN = 2, function(x) {

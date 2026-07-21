@@ -326,7 +326,7 @@ KernelLambdas <- function(models, splits, loss, probfun, lambdas) {
 #' @slot bootArgs Arguments passed to bootstrap function
 #' @slot bootData Bootstrap data stored after samples are generated
 #'
-#' @include bootstrap.R
+#' @include boot-utils.R
 #'
 
 setClass(
@@ -444,7 +444,7 @@ setClass(
 #' @returns BootModels S4 object
 #' @export
 #'
-#' @examples
+#' @examples placeholder
 
 BootModels <- function(trainData, bootData, models, lambdas) {
   resamp_predict <- reverse_bs(bootData = bootData, original_data = trainData)

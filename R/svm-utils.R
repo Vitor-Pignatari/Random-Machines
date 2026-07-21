@@ -1,10 +1,13 @@
 #' Call building utility for kernlab
 #'
-#' @param specs 
+#' @param specs placeholder
 #'
-#' @returns
+#' @returns placeholder
 #'
-#' @examples
+#' @examples placeholder
+#' 
+#' @export
+#' @import kernlab
 #' 
 .callbuider <- function(specs) {
   

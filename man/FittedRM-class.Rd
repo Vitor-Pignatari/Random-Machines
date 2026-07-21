@@ -13,7 +13,7 @@ Title FittedRM
 \section{Slots}{
 
 \describe{
-\item{\code{specs}}{RMSpecs.}
+\item{\code{specs}}{ArgSpecs.}
 
 \item{\code{lambdas}}{KernelLambdas.}
 
@@ -26,4 +26,5 @@ Title FittedRM
 
 \examples{
 placeholder
+
 }
