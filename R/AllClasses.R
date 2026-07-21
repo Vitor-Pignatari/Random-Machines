@@ -25,13 +25,6 @@ setClass(
   )
 )
 
-#' Title
-#'
-#' @returns
-#' @export
-#'
-#' @examples
-#'
 setClass(Class = "ArgSpecsClass", contains = "ArgSpecs")
 
 setClass(Class = "ArgSpecsReg", contains = "ArgSpecs")
@@ -67,13 +60,10 @@ setClass(Class = "ArgSpecsReg", contains = "ArgSpecs")
 # })
 
 setValidity(Class = "ArgSpecs", function(object) {
-  
-  # Length validations
   if (nrow(object@x) < 5) {
     return("'x' must must have more than 4 observations")
   }
   
-  # Tasks
   tasks <- c(
     'regression' = 'numeric',
     'binary' = 'factor',
@@ -85,19 +75,36 @@ setValidity(Class = "ArgSpecs", function(object) {
   }
   
   if (class(object@y) !=  tasks[object@task]) {
-    paste0(
+    return(paste0(
       "Task ",
       object@task,
       "is not compatible with object of class",
       class(object@y)
-    )
+    ))
   }
   
-  # Lambda metric
   if (!all(c('truth', 'estimate') %in% names(formals(object@lambdaMetric)))) {
     return("'lambdaMetric' must have the arguments 'truth' and 'estimate'")
   }
   
+
+  if (object@task %in% c('binary', 'multiclass')) {
+    # lambda metrics - classification
+    res <- tryCatch(
+      expr = object@lambdaMetric(truth = as.factor(c(1, 2, 1, 2)), estimate = as.factor(c(1, 2, 2, 2))),
+      error = function(e) {
+        e
+      }
+    )
+  } else {
+    res <- tryCatch(
+      expr = object@lambdaMetric(truth = rnorm(4), estimate = rnorm(4)),
+      error = function(e) {
+        e
+      }
+    )
+  }
+
   if (inherits(res, "error")) {
     return("error evaluating 'lambdaMetric'. Must be a valid function")
   }
@@ -210,49 +217,6 @@ setValidity(Class = "ArgSpecs", function(object) {
   TRUE
 })
 
-#' ArgSpecs constructor helper function
-#'
-#' @param x training dataset
-#' @param y target variable
-#' @param task binary, classification or multiclass
-#' @param kernels list of kernel functions to be used within kernlab
-#' @param b number of bootstrap samples to be used
-#' @param lambdaMetric performance metric for lambda calculation
-#' @param lambdaFunction function to determine kernel sampling probability calculation from lambda metrics
-#' @param omegaMetric performance metric for omega calculation
-#' @param omegaFunction function to determine weights for each b model's predictions in final prediction
-#'
-#' @returns ArgSpecs S4 object
-#'
-#' @examples
-#'
-ArgSpecs <- function(x = x,
-                     y = y,
-                     task = task,
-                     kernels = kernels,
-                     b = b,
-                     lambdaMetric = lambdaMetric,
-                     lambdaFunction = lambdaFunction,
-                     omegaMetric = omegaMetric,
-                     omegaFunction = omegaFunction) {
-  new(
-    'ArgSpecs',
-    x = x,
-    y = y,
-    task = "binary",
-    kernels = list(
-      kernlab::rbfdot(sigma = 1),
-      kernlab::laplacedot(sigma = 1),
-      kernlab::vanilladot()
-    ),
-    b = b,
-    lambdaMetric = lambdaMetric,
-    lambdaFunction = lambdaFunction,
-    omegaMetric = omegaMetric,
-    omegaFunction = omegaFunction
-  )
-}
-
 #' Initial model training data
 #'
 #' training data splits and validation setequal
@@ -270,20 +234,18 @@ setClass(
   ),
   prototype  = list(
     data     = list(),
-    splitfun = function(x) {
-    }
+    splitfun = function(x){
+    },
+    splitargs = list()
   )
 )
 
 setValidity(Class = "KernelSamples", function(object) {
   # Ad
-  
   if (length(object@splitfun(iris)) != 2) {
     return("splitfun must return a list with two elements, the resample matrix and OOB matrix")
   }
   # Usar como base o vfold_cv
-  
-  
   TRUE
 })
 
@@ -460,14 +422,17 @@ BootSamples <- function(trainData, bootFun = simple_bs, bootArgs) {
 #' @slot bootPredict An integer representing the user's age.
 #'
 setClass(
-  Class = "BootModels",
+  Class = "BootModels", 
   slots = list(
     BootModels = "list",
     bootPredict = "list",
     bootMetrics = "matrix"
   ),
   prototype = list(
-    bootPredict = list("Resamples" = matrix(), "OOB" = matrix()),
+    bootPredict = list(
+      "Resamples" = matrix(), 
+      "OOB" = matrix()
+    ),
     bootMetrics = matrix()
   )
 )
@@ -503,7 +468,10 @@ BootModels <- function(trainData, bootData, models, lambdas) {
 setClass(
   Class = "BootOmega",
   contains = "BootModels",
-  slots = list(omegaMetric  = "numeric", omegaFunction = "numeric")
+  slots = list(
+    omegaMetric  = "numeric",
+    omegaFunction = "numeric"
+  )
 )
 
 #' Title FittedRM
@@ -534,7 +502,6 @@ setClass(
 ### Class constructor
 #' @export
 #'
-
 FittedRM <- function(bootData, bootFun = sample, bootArgs) {
   final <- new("FittedRM")
   return(final)
