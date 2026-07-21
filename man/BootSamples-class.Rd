@@ -7,3 +7,15 @@
 \description{
 An S4 class representing a user profile
 }
+\section{Slots}{
+
+\describe{
+\item{\code{trainData}}{Training data to have bootstrap samples generated}
+
+\item{\code{bootFun}}{Bootstrap function passed into object creation}
+
+\item{\code{bootArgs}}{Arguments passed to bootstrap function}
+
+\item{\code{bootData}}{Bootstrap data stored after samples are generated}
+}}
+
