@@ -2,21 +2,27 @@
 % Please edit documentation in R/utils.R
 \name{my_helper_function}
 \alias{my_helper_function}
-\title{\link{Short Title/Description of the Helper Function}}
+\title{my_helper_function}
 \usage{
 my_helper_function(arg1, arg2 = NULL)
 }
 \arguments{
-\item{[arg_name]}{\link{Data type and description of the input}}
+\item{arg1}{Data type and description of the input}
+
+\item{arg2}{Data type and description of the input}
 }
 \value{
-\link{Data type and description of what the function outputs}
+whatver whatever
 }
 \description{
-\link{Optional: A more detailed explanation of what the function does}
+Optional: A more detailed explanation of what the function does
+}
+\details{
+generic helper function
 }
 \examples{
 # [arg_name] <- c(1, 2, 3)
 # my_helper_function([arg_name])
+
 
 }

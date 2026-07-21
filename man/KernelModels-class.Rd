@@ -3,7 +3,7 @@
 \docType{class}
 \name{KernelModels-class}
 \alias{KernelModels-class}
-\title{Trained models for each KernelData}
+\title{Trained models for each KernelSamples}
 \description{
 Models (one per kernel) fitted to specified splits (or no split)
 }
