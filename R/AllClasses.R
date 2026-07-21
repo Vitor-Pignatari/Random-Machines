@@ -87,7 +87,7 @@ setValidity(Class = "ArgSpecs", function(object) {
     return("'lambdaMetric' must have the arguments 'truth' and 'estimate'")
   }
   
-
+  
   if (object@task %in% c('binary', 'multiclass')) {
     # lambda metrics - classification
     res <- tryCatch(
@@ -104,7 +104,7 @@ setValidity(Class = "ArgSpecs", function(object) {
       }
     )
   }
-
+  
   if (inherits(res, "error")) {
     return("error evaluating 'lambdaMetric'. Must be a valid function")
   }
@@ -235,15 +235,14 @@ setClass(
   prototype  = list(
     data     = list(),
     splitfun = function(x){
-    },
-    splitargs = list()
+    }
   )
 )
 
 setValidity(Class = "KernelSamples", function(object) {
   # Ad
   if (length(object@splitfun(iris)) != 2) {
-    return("splitfun must return a list with two elements, the resample matrix and OOB matrix")
+    return("splitfun must return a list with two elements, the resample matrix and test matrix")
   }
   # Usar como base o vfold_cv
   TRUE
@@ -340,22 +339,22 @@ setClass(
   prototype = list(
     bootFun = simple_bs,
     bootArgs  = list(B = 100),
-    bootData = list("Resamples" = matrix(), "OOB" = matrix())
+    bootData = list("train" = matrix(), "test" = matrix())
   )
 )
 
 setValidity(
   Class = "BootSamples",
   method = function(object) {
-    # object@bootData[["Resamples"]] is n x b rows matrix with values indicating row number/name in original sample
-    # object@bootData[["OOB"]] is n x b rows matrix with values indicating whether sample is in OOB or not
-    nameVal <- setequal(names(object@bootData), c("Resamples", "OOB"))
+    # object@bootData[["train"]] is n x b rows matrix with values indicating row number/name in original sample
+    # object@bootData[["test"]] is n x b rows matrix with values indicating whether sample is in test or not
+    nameVal <- setequal(names(object@bootData), c("train", "test"))
     
     # bootData must be a list of length 2
     lengthVal <- length(object@bootData) == 2 &
       class(object@bootData) == "list"
     
-    sizeVal <- nrow(object@bootData[["Resamples"]]) == nrow(object@bootData[["OOB"]])
+    sizeVal <- nrow(object@bootData[["train"]]) == nrow(object@bootData[["test"]])
     
     classesVal <- setequal(unique(as.character(sapply(
       object@bootData, class
@@ -366,7 +365,7 @@ setValidity(
     
     if (!nameVal) {
       errors[1] <- 1
-      messages[1] <- "Error: bootData must be a named list with named matrixes 'Resamples' and 'OOB'."
+      messages[1] <- "Error: bootData must be a named list with named matrixes 'train' and 'test'."
     }
     
     if (!lengthVal) {
@@ -376,7 +375,7 @@ setValidity(
     
     if (!sizeVal) {
       errors[3] <- 1
-      messages[3] <- "Error: number of rows in object bootData 'Resamples' matrix is different than the object in 'OOB Matrix'."
+      messages[3] <- "Error: number of rows in object bootData 'train' matrix is different than the object in 'test Matrix'."
     }
     
     if (!classesVal) {
@@ -409,10 +408,9 @@ BootSamples <- function(trainData, bootFun = simple_bs, bootArgs) {
   bootData <- do.call(bootFun, args = bootArgs)
   new(
     "BootSamples",
-    trainData = trainData,
-    bootData = bootData,
     bootFun = bootFun,
-    bootArgs = bootArgs
+    bootArgs = bootArgs,
+    bootData = bootData
   )
 }
 
@@ -430,8 +428,8 @@ setClass(
   ),
   prototype = list(
     bootPredict = list(
-      "Resamples" = matrix(), 
-      "OOB" = matrix()
+      "train" = matrix(), 
+      "test" = matrix()
     ),
     bootMetrics = matrix()
   )

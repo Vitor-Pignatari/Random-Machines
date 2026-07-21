@@ -7,7 +7,7 @@
 #' @examples
 #' 
 .callbuider <- function(specs) {
-
+  
   if (specs$implementation == "kernlab") {
     
     if (specs$task == "binary" | specs$task == "multiclass") {
@@ -25,15 +25,14 @@
     )
     
     allcalls <- lapply(names(specs$args), function(x){
-        allcalls <- lapply(specs$kernels , function(x){
-          args <- c(callargs, specs$args[[x]])
-          call <- as.call(args)
-          # Retorna call completa inclusive com argumentos não especificados
-          fun_call <- match.call(kernlab::ksvm, call)
-          return(fun_call)
-        })
+      args <- c(callargs, specs$args[[x]])
+      call <- as.call(args)
+      # Retorna call completa inclusive com argumentos não especificados
+      fun_call <- match.call(kernlab::ksvm, call)
+      return(fun_call)
     })
     names(allcalls) <- specs$kernels
+    
     return(allcalls)
   }
 }
