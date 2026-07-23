@@ -464,11 +464,11 @@ BootModels <- function(trainData, bootData, models, lambdas) {
 #' @slot omegaFunction placeholder
 #'
 setClass(
-  Class = "BootOmegaPredict",
+  Class = "BootOmega",
   slots = list(
     omegaMetrics  = "numeric",
     omegaFunction = "numeric",
-    omegaPredictions = 
+    omegaPredictions = "matrix"
   )
 )
 

@@ -53,12 +53,73 @@ apply_calls <- function(data, svmcalls, datasplit, indexes = NULL) {
     indexes <- 1:length(svmcalls)
   }
   
+  
   allkernels <- lapply(indexes, function(x) {
+    kernelf <- list(kpar = NULL, .Data = NULL)
+    kf = FALSE
     alldatasets <- apply(datasplit[["train"]], MARGIN = 2, function(y) {
-      train <- data[rownames(iris_bin) %in% y, ]
-      test <- data[!rownames(iris_bin) %in% y, ]
+  
+      train <- data[1:nrow(data) %in% y, ]
+      test <- data[!(1:nrow(data) %in% y), ]
       
-      svm.model <- eval(rlang::call_modify(svmcalls[[x]], train))
+      newargs <- list(data = train, fit = FALSE)
+      
+      svm.model <- eval(rlang::call_modify(svmcalls[[x]], !!!newargs))
+      
+      pred <- predict(svm.model, test)
+      metric <- do.call(specs[["lambdaMetric"]], list(truth = test[[specs[["formula"]][[2]]]], estimate = pred))
+      
+      # Saving memory
+      if(!kf){
+        kernelf$kpar <<- svm.model@kernelf@kpar
+        kernelf$.Data <<- svm.model@kernelf@.Data
+      }
+      
+      # Two heaviest slots in the object
+      svm.model@kcall <- quote(f())
+      svm.model@kernelf@kpar <- list()
+      svm.model@kernelf@.Data<- function(){}
+      
+      return(list(
+        svm.model = svm.model,
+        pred = pred,
+        metric = metric
+      ))
+    })
+    return(list(fits = alldatasets, kernelf = kernelf))
+  })
+  names(allkernels) <- names(allcalls)
+  return(allkernels)
+}
+
+#' Apply SVM calls to all partitions of data split
+#'
+#' @param svmcalls placeholder
+#' @param datasplit placeholder
+#' @param indexes placeholder
+#'
+#' @returns placeholder
+#'
+#' @examples placeholder
+#'
+apply_calls_bad <- function(data, svmcalls, datasplit, indexes = NULL) {
+  
+  if(is.null(indexes)){
+    indexes <- 1:length(svmcalls)
+  }
+  
+  
+  allkernels <- lapply(indexes, function(x) {
+    kernelf <- list(kpar = NULL, .Data = NULL)
+    kf = FALSE
+    alldatasets <- apply(datasplit[["train"]], MARGIN = 2, function(y) {
+      
+      train <- data[1:nrow(data) %in% y, ]
+      test <- data[!(1:nrow(data) %in% y), ]
+      
+      newargs <- list(data = train, fit = FALSE)
+      
+      svm.model <- eval(rlang::call_modify(svmcalls[[x]], !!!newargs))
       
       pred <- predict(svm.model, test)
       metric <- do.call(specs[["lambdaMetric"]], list(truth = test[[specs[["formula"]][[2]]]], estimate = pred))
@@ -69,5 +130,8 @@ apply_calls <- function(data, svmcalls, datasplit, indexes = NULL) {
         metric = metric
       ))
     })
+    return(list(fits = alldatasets, kernelf = kernelf))
   })
+  names(allkernels) <- names(allcalls)
+  return(allkernels)
 }

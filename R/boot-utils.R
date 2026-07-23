@@ -14,6 +14,10 @@
 #'
 simple_bs <- function(indexes, B) {
   
+  if(!(class(indexes) %in% c("numeric", "integer"))){
+    stop("Argument 'indexes' must be of class 'numeric' or 'integer'", call. = FALSE)  
+  }
+  
   n <- length(indexes)
   
   bsmatrix <- matrix(nrow = length(indexes), ncol =  B)

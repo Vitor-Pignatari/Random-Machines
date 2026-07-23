@@ -10,8 +10,8 @@ An S4 class representing a user profile
 \section{Slots}{
 
 \describe{
-\item{\code{name}}{A character string representing the user's name.}
+\item{\code{omegaMetrics}}{placeholder}
 
-\item{\code{age}}{An integer representing the user's RandomMachinesge.}
+\item{\code{omegaFunction}}{placeholder}
 }}
 
