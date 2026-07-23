@@ -73,7 +73,7 @@ test_that("BootModels objects creation works successfully", {
         digits = 2L)
   
   lambdas <- c(0.32, 0.21, 0.47)
-  
+  lobstr::obj_size(lambdas)
   bootcalls <- sample(
     1:length(allcalls),
     size = specs$b,
