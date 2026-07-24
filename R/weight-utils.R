@@ -1,10 +1,10 @@
 #' Log normalize a vector
 #'
-#' @param x
+#' @param x placeholder
 #'
 #' @return a vector of probabilites
 #'
-#' @examples
+#' @examples placeholder
 default_weight_binary <- function(x){
-  return(1/(1 - x)^2)
+  return(1/((1 - x)^2))
 }

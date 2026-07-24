@@ -22,6 +22,39 @@ setClass(
     omegaMetric    = "function",
     # This one as well
     omegaFunction  = "function"
+  ),
+  prototype = list(
+    data           = quote(iris),
+    formula        = Species ~ .,
+    task           = "binary",
+    prob           = FALSE,
+    implementation = "kernlab",
+    kernels        = c("rbf", "laplace", "polydot"),
+    args           = list(
+      "rbf" = list(
+        C = 1,
+        epsilon = 0.1,
+        kernel = kernlab::rbfdot(sigma = 1)
+      ),
+      "laplace" = list(
+        C = 1,
+        epsilon = 0.01,
+        kernel = kernlab::laplacedot(sigma = 1)
+      ),
+      "polydot" = list(
+        C = 1,
+        epsilon = 0.01,
+        kernel = kernlab::polydot(degree = 1, scale = 1)
+      )
+    ),
+    B              = 100,
+    lambdaMetric   = yardstick::accuracy_vec,
+    # Will require at least virtual class
+    lambdaFunction = log_normalize,
+    # This one also has constraints
+    omegaMetric    = yardstick::accuracy_vec,
+    # This one as well
+    omegaFunction  = default_weight_binary
   )
 )
 

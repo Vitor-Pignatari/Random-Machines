@@ -27,9 +27,9 @@ test_that("BootModels objects creation works successfully", {
         kernel = kernlab::polydot(degree = 1, scale = 1)
       )
     ),
-    b = 100,
+    B = 100,
     metric_function = yardstick::accuracy_vec,
-    weight_function = 
+    weight_function = default_weight_binary
   )
   
   allcalls <- call_builder(specs = specs)
@@ -60,8 +60,8 @@ test_that("BootModels objects creation works successfully", {
   
   lobstr::ref(bootmodels_bad$rbf$fits[[1]]@kcall)
   lobstr::ref(bootmodels_bad$rbf$fits[[2]]@kcall)
-  
   lobstr::obj_size(lambdas)
+  
   bootcalls <- sample(
     1:length(allcalls),
     size = specs$b,
