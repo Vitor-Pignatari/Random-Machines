@@ -26,6 +26,7 @@ Collate:
     'svm-utils.R'
     'utils.R'
     'validity-utils.R'
+    'weight-utils.R'
 RoxygenNote: 7.3.1
 Suggests: 
     testthat (>= 3.0.0)

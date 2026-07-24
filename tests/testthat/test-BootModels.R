@@ -54,6 +54,9 @@ test_that("BootModels objects creation works successfully", {
     metric_function = specs$metric_function
   )
   
+  
+  
+  
   # objs
   nms <- slotNames(md)
   sizes <- sapply(nms, function(x){

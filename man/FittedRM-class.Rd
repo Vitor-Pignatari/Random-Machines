@@ -21,7 +21,7 @@ Title FittedRM
 
 \item{\code{boot_models}}{BootModels.}
 
-\item{\code{boot_omega}}{BootOmega.}
+\item{\code{boot_omegas}}{BootOmegas.}
 }}
 
 \examples{

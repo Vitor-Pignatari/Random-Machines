@@ -412,7 +412,12 @@ BootOmegas <- function(specs, lambdas) {
     size = specs$B
   )
   
-  bootmodels <- apply_calls(data = iris, svmcalls = allcalls, datasplit = samp_iris, indexes = sampmodels)
+  bootmodels <- apply_fit_calls(
+    data = data,
+    svmcalls = allcalls,
+    datasplit = bootsamples@bootData,
+    metric_function = specs$metric_function
+  )
   
   new(
     "BootOmegas",
@@ -440,7 +445,6 @@ setClass(
     specs = "ArgSpecs",
     lambdas = "KernelLambdas",
     bs_samples = "BootSamples",
-    boot_models = "BootModels",
     boot_omega = "BootOmegas"
   )
 )
