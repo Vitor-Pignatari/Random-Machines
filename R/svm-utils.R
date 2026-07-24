@@ -38,42 +38,58 @@ call_builder <- function(specs) {
   }
 }
 
+
 #' Apply SVM calls to all partitions of data split
 #'
-#' @param svmcalls placeholder
+#' @param data placeholder
 #' @param datasplit placeholder
+#' @param svmcalls placeholder
+#' @param metric_function placeholder
+#' @param weight_function placeholder
 #' @param indexes placeholder
 #'
-#' @returns placeholder
+#' @returns
+#' @export
 #'
-#' @examples placeholder
-#'
-
-boot_fit_omega <- function(data, svmcalls, datasplit, metric_function,
-                           weight_function, indexes = NULL) {
+#' @examples
+svm_fit_any <- function(data,
+                        datasplit,
+                        svmcalls,
+                        metric_function,
+                        weight_function,
+                        indexes = NULL) {
   
   if(is.null(indexes)){
     indk <- 1:length(svmcalls)
   }
   
   # BootOmega case - One fit + prediction per kernel
-  # Separate through method later on
   if(indk > length(svmcalls)) {
-    allkernels <- lapply(indk, function(x) {
-      metrics <- numeric(ncol(datasplit[["train"]]))
+    
+    allkernels_fit <- lapply(indk, function(x) {
+      # Metric storage
       indx <- datasplit[["train"]][, x]
         
       train <- data[1:nrow(data) %in% indx, ]
-      test <- data[!(1:nrow(data) %in% indx), ]
         
       newargs <- list(data = train, fit = FALSE)
         
       svm.model <- eval(rlang::call_modify(svmcalls[[x]], !!!newargs))
         
+      
+      return(svm.model)
+    })
+    
+    allkernels_predict <- sapply(allkernels_fit, function(x){
+      
+      indx <- datasplit[["test"]][, x]
+      test <- data[indx, ]
       pred <- predict(svm.model, test)
       metrics[x] <- do.call(metric_function, list(test[[svm.model@terms[[2]]]], pred))
-      return(list(svm.model = svm.model, metrics = metrics))
+      
+      return(metrics = metrics)  
     })
+    
   # KernelLambdas case - R  * K models to have their metrics summarized
   # Separate through method later on
   }else{
@@ -101,11 +117,15 @@ boot_fit_omega <- function(data, svmcalls, datasplit, metric_function,
     })
   }
   
-  names(allkernels) <- names(allcalls)[indk]
-  sapply(allkernels, function(x){mean()})
-  return(list(allkernels, omegas))
+  names(allkernels_fit) <- 
+  
+  #names(allkernels) <- names(allcalls)[indk]
+  #sapply(allkernels, function(x){mean()})
+  #return(list(allkernels, omegas))
 }
 
-omega_calc <- function(bootmodels){
+
+
+omega_calc <- function(bootModels, omegaFunction){
   
 }
