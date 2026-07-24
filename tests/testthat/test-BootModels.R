@@ -45,17 +45,12 @@ test_that("BootModels objects creation works successfully", {
   lambdas <- c(0.32, 0.21, 0.47)
   indexes <- sample(1:length(allcalls), prob = lambdas, replace = TRUE, size = specs$b)
   
-  devtools::load_all()
-  
   bootmodels <- apply_fit_calls(
     data = data,
     svmcalls = allcalls,
     datasplit = bootsamples@bootData,
     metric_function = specs$metric_function
   )
-  
-  
-  
   
   # objs
   nms <- slotNames(md)
