@@ -20,4 +20,5 @@ test_that("'RMSpecs' has instantieted correctly", {
   )
   
   expect_true(class(newObject) == 'RMSpecs')
+  
 })

@@ -5,15 +5,16 @@ NULL
 setClassUnion("NumOrFactor", c("numeric", "factor"))
 
 setClass(
-  Class = "RMSpecs",
+  Class = "ArgSpecs",
   slots = list(
-    x               = "data.frame",
-    y               = "NumOrFactor",
-    task            = "character",
-    prob            = "logical",
-    kernels         = "list",
-    hyperparams     = "list",
-    b               = "numeric",
+    data           = "data.frame",
+    formula        = "formula",
+    task           = "character",
+    prob           = "logical",
+    implementation = "character",
+    kernels        = "character",
+    args           = "list",
+    B              = "numeric",
     lambdaMetric   = "function",
     # Will require at least virtual class
     lambdaFunction = "function",
@@ -24,23 +25,54 @@ setClass(
   )
 )
 
-setValidity(Class = "RMSpecs", function(object) {
+setClass(Class = "ArgSpecsClass", contains = "ArgSpecs")
+
+setClass(Class = "ArgSpecsReg", contains = "ArgSpecs")
+
+# TODO: set up different validation scheme for each task
+# setValidity(Class = "ArgSpecsClass", function(object){
+#   if (object@task %in% c('binary', 'multiclass')) {
+#     
+#     # lambda metrics function validation - classification
+#     res <- tryCatch(
+#       expr = object@lambdaMetric(truth = as.factor(c(1, 2, 1, 2)), estimate = as.factor(c(1, 2, 2, 2))),
+#       error = function(e) {
+#         e
+#       }
+#     # Omega metrics - classification
+#     res <- tryCatch(
+#       expr = object@omegaMetric(truth = as.factor(c(1, 2, 1, 2)), estimate = as.factor(c(1, 2, 2, 2))),
+#       error = function(e) {
+#         e
+#       }
+#     )
+#   }
+# })
+
+# setValidity(Class = "ArgSpecsReg", function(object){
+#   # Can lambdametric run?
+#   res <- tryCatch(
+#     expr = object@lambdaMetric(truth = rnorm(4), estimate = rnorm(4)),
+#     error = function(e) {
+#       e
+#     }
+#   )
+# })
+
+setValidity(Class = "ArgSpecs", function(object) {
   if (nrow(object@x) < 5) {
     return("'x' must must have more than 4 observations")
   }
   
-  # task
-  if (!(object@task %in% c('regression', 'binary', 'multiclass'))) {
-    return("'task' must be one of : 'regression', 'binary', 'multiclass'")
-  }
-  
-  # task
   tasks <- c(
     'regression' = 'numeric',
     'binary' = 'factor',
     'multiclass' = 'factor'
   )
   
+  if (!(object@task %in% tasks)) {
+    return(paste0("'task' must be one of : ", paste0(names(tasks), collapse = ", ")))
+  }
   
   if (class(object@y) !=  tasks[object@task]) {
     return(paste0(
@@ -51,11 +83,10 @@ setValidity(Class = "RMSpecs", function(object) {
     ))
   }
   
-  # lambda metric
-  
   if (!all(c('truth', 'estimate') %in% names(formals(object@lambdaMetric)))) {
     return("'lambdaMetric' must have the arguments 'truth' and 'estimate'")
   }
+  
   
   if (object@task %in% c('binary', 'multiclass')) {
     # lambda metrics - classification
@@ -87,7 +118,6 @@ setValidity(Class = "RMSpecs", function(object) {
   }
   
   # lambda function
-  
   res <- tryCatch(
     object@lambdaFunction(runif(50)),
     error = function(e)
@@ -111,7 +141,6 @@ setValidity(Class = "RMSpecs", function(object) {
   }
   
   # omega metric
-  
   if (!all(c('truth', 'estimate') %in% names(formals(object@omegaMetric)))) {
     return("'omegaMetric' must have the arguments 'truth' and 'estimate'")
   }
@@ -177,60 +206,16 @@ setValidity(Class = "RMSpecs", function(object) {
   #   errors <- c(errors, "'kernels' must be a valid kernlab function")
   # }
   
-  # b
-  if (length(object@b) > 1) {
-    return("'b' must have lenght 1")
+  # B
+  if (length(object@B) > 1) {
+    return("'B' must have length 1")
   }
-  if (!is.integer(object@b)) {
-    return("'b' must be an integer")
+  if (!is.integer(object@B)) {
+    return("'B' must be an integer")
   }
   
   TRUE
 })
-
-#' RMSpecs constructor helper function
-#'
-#' @param x training dataset
-#' @param y target variable
-#' @param task binary, classification or multiclass
-#' @param kernels list of kernel functions to be used within kernlab
-#' @param b number of bootstrap samples to be used
-#' @param lambdaMetric performance metric for lambda calculation
-#' @param lambdaFunction function to determine kernel sampling probability calculation from lambda metrics 
-#' @param omegaMetric performance metric for omega calculation
-#' @param omegaFunction function to determine weights for each b model's predictions in final prediction
-#'
-#' @returns RMSpecs S4 object
-#'
-#' @examples
-#' 
-RMSpecs <- function(x = x,
-                    y = y,
-                    task = task,
-                    prob = prob,
-                    kernels = kernels,
-                    hyperparams = hyperparams,
-                    b = b,
-                    lambdaMetric = lambdaMetric,
-                    lambdaFunction = lambdaFunction,
-                    omegaMetric = omegaMetric,
-                    omegaFunction = omegaFunction
-) {
-  new(
-    'RMSpecs',
-    x = x,
-    y = y,
-    task = task,
-    prob = prob,
-    kernels = kernels,
-    hyperparams = hyperparams,
-    b = b,
-    lambdaMetric = lambdaMetric,
-    lambdaFunction = lambdaFunction,
-    omegaMetric = omegaMetric,
-    omegaFunction = omegaFunction
-  )
-}
 
 #' Initial model training data
 #'
@@ -243,26 +228,24 @@ RMSpecs <- function(x = x,
 setClass(
   Class = "KernelSamples",
   slots = c(
-    data     = "list",
-    splitfun = "function",
+    data      = "list",
+    splitfun  = "function",
     splitargs = "list"
   ),
-  prototype = list(
-    data     = data.frame(),
-    splitfun = function(x) {},
+  prototype  = list(
+    data     = list(),
+    splitfun = function(x){
+    },
     splitargs = list()
   )
 )
 
 setValidity(Class = "KernelSamples", function(object) {
   # Ad
-  
-  if (is.matrix(length(do.call(object@splitfun, object@splitargs)))) {
-    return("splitfun must return a indicator matrix of the samples")
+  if (length(object@splitfun(iris)) != 2) {
+    return("splitfun must return a list with two elements, the resample matrix and test matrix")
   }
   # Usar como base o vfold_cv
-  
-  
   TRUE
 })
 
@@ -272,31 +255,6 @@ KernelSamples <- function(splitfun, splitargs) {
   
   new('KernelSamples', data = newData, splitfun = splitfun, splitargs = splitargs)
   
-}
-
-#' Trained models for each KernelSamples
-#'
-#' Models (one per kernel) fitted to specified splits (or no split)
-#'
-#' @slot models list containing all trained models
-#' @slot data   list of data splits each training process used
-setClass(
-  Class = "KernelModels",
-  slots = c(models = "list"),
-  prototype = list(models = list())
-)
-
-setValidity(Class = "KernelModels", function(object) {
-  if (!all(sapply(modelos, function(x) {
-    class(x)
-  }) == 'ksvm')) {
-    return("'models' must be a list of objects of class 'ksvm'")
-  }
-  TRUE
-})
-
-KernelModels <- function(models, data) {
-  new('KernelModels', models = models)
 }
 
 #' Internal S4 class for RM 1st stage representation
@@ -309,13 +267,9 @@ KernelModels <- function(models, data) {
 setClass(
   Class = "KernelLambdas",
   slots = list(
-    # maybe call loss mettrics or whatever
-    loss    = "numeric",
-    lambdas = "numeric"
-  ),
-  prototype = list(
-    loss    = numeric(10),
-    lambdas = numeric(10)
+    kernelModels = "list",
+    kernelMetrics  = "numeric",
+    kernelLambdas = "numeric"
   )
 )
 
@@ -327,11 +281,10 @@ setValidity(Class = "KernelLambdas", function(object) {
 KernelLambdas <- function(loss, probfun, lambdas) {
   new(
     'KernelLambdas',
-    loss = loss,
-    probfun = probfun,
-    lambdas = lambdas
+    kernelModels = list(),
+    kernelMetrics  = numeric(),
+    kernelLambdas = numeric()
   )
-  
 }
 
 #' An S4 class representing a user profile
@@ -340,7 +293,7 @@ KernelLambdas <- function(loss, probfun, lambdas) {
 #' @slot bootArgs Arguments passed to bootstrap function
 #' @slot bootData Bootstrap data stored after samples are generated
 #'
-#' @include splitFunctions-utils.R
+#' @include boot-utils.R
 #'
 
 setClass(
@@ -348,27 +301,27 @@ setClass(
   slots = list(
     bootFun     = "function",
     bootArgs    = "list",
-    bootData = "list"
+    bootData    = "list"
   ),
   prototype = list(
     bootFun = simple_bs,
     bootArgs  = list(B = 100),
-    bootData = list("Resamples" = matrix(), "OOB" = matrix())
+    bootData = list("train" = matrix(), "test" = matrix())
   )
 )
 
 setValidity(
   Class = "BootSamples",
   method = function(object) {
-    
-    # object@bootData[["Resamples"]] is n x b rows matrix with values indicating row number/name in original sample
-    # object@bootData[["OOB"]] is n x b rows matrix with values indicating whether sample is in OOB or not
-    nameVal <- setequal(names(object@bootData), c("Resamples", "OOB"))
+    # object@bootData[["train"]] is N x B rows matrix with values indicating row number/name in original sample
+    # object@bootData[["test"]] is N x B rows matrix with values indicating whether sample is in test or not
+    nameVal <- setequal(names(object@bootData), c("train", "test"))
     
     # bootData must be a list of length 2
-    lengthVal <- length(object@bootData) == 2 & class(object@bootData) == "list" 
+    lengthVal <- length(object@bootData) == 2 &
+      class(object@bootData) == "list"
     
-    sizeVal <- nrow(object@bootData[["Resamples"]]) == nrow(object@bootData[["OOB"]])
+    sizeVal <- nrow(object@bootData[["train"]]) == nrow(object@bootData[["test"]])
     
     classesVal <- setequal(unique(as.character(sapply(
       object@bootData, class
@@ -379,7 +332,7 @@ setValidity(
     
     if (!nameVal) {
       errors[1] <- 1
-      messages[1] <- "Error: bootData must be a named list with named matrixes 'Resamples' and 'OOB'."
+      messages[1] <- "Error: bootData must be a named list with named matrixes 'train' and 'test'."
     }
     
     if (!lengthVal) {
@@ -389,7 +342,7 @@ setValidity(
     
     if (!sizeVal) {
       errors[3] <- 1
-      messages[3] <- "Error: number of rows in object bootData 'Resamples' matrix is different than the object in 'OOB Matrix'."
+      messages[3] <- "Error: number of rows in object bootData 'train' matrix is different than the object in 'test Matrix'."
     }
     
     if (!classesVal) {
@@ -424,90 +377,88 @@ BootSamples <- function(trainData, bootFun = simple_bs, bootArgs) {
   bootData <- do.call(bootFun, args = bootArgs)
   new(
     "BootSamples",
-    bootData = bootData,
     bootFun = bootFun,
-    bootArgs = bootArgs
+    bootArgs = bootArgs,
+    bootData = bootData
   )
 }
 
 #' An S4 class representing a user profile
 #'
-#' @slot bootData A character string representing the user's name.
-#' @slot bootPredict An integer representing the user's age.
+#' @slot omegaMetrics placeholder
+#' @slot omegaFunction placeholder
 #'
 setClass(
-  Class = "BootModels", 
+  Class = "BootOmegas",
   slots = list(
-    BootModels = "list",
-    bootPredict = "list",
-    bootMetrics = "matrix"
-  ),
-  prototype = list(
-    bootPredict = list(
-      "Resamples" = matrix(), 
-      "OOB" = matrix()
-    ),
-    bootMetrics = matrix()
+    bootModels = "list",
+    bootMetrics  = "numeric",
+    bootOmegas = "numeric"
   )
 )
 
-#' Helper constructor for BootModels
+#' BootOmegas constructor function
 #'
-#' @param bootData Result slot from BootSamples
-#' @param models Result slot from KernelLambdas
-#' @param lambdas Result slot from KernelModels
+#' @param specs 
+#' @param lambdas
 #'
-#' @returns BootModels S4 object
+#' @returns
 #' @export
 #'
 #' @examples
-
-BootModels <- function(trainData, bootData, models, lambdas){
-  resamp_predict <- reverse_bs(bootData = bootData, original_data = trainData)
-  new("BootModels", BootModels = , bootMetrics = models, bootPredict = lambdas)
-}
-
-# Maybe both of the following could be mixed into a single class. Won't oppose.
-
-#' An S4 class representing a user profile
-#'
-#' @slot name A character string representing the user's name.
-#' @slot age An integer representing the user's RandomMachinesge.
-#'
-setClass(
-  Class = "BootOmega",
-  contains = "BootModels",
-  slots = list(
-    omegaMetric  = "numeric",
-    omegaFunction = "numeric"
+BootOmegas <- function(specs, lambdas) {
+  
+  modelcalls <- call_builder(specs, lambdas)
+  
+  data <- eval(specs$data)
+  
+  indexes <- sample(
+    1:length(allcalls),
+    prob = lambdas,
+    replace = TRUE,
+    size = specs$B
   )
-)
+  
+  bootmodels <- apply_fit_calls(
+    data = data,
+    svmcalls = allcalls,
+    datasplit = bootsamples@bootData,
+    metric_function = specs$metric_function
+  )
+  
+  new(
+    "BootOmegas",
+    bootModels = bootmodels
+  )
+}
 
 #' Title FittedRM
 #'
-#' @slot specs RMSpecs.
+#' @slot specs ArgSpecs.
 #' @slot lambdas KernelLambdas.
 #' @slot bs_samples BootSamples.
 #' @slot boot_models BootModels.
-#' @slot boot_omega BootOmega.
+#' @slot boot_omegas BootOmegas.
 #'
 #' @return placeholder
 #' @export
 #'
 #' @examples placeholder
+#'
+
 setClass(
   Class = "FittedRM",
   slots = list(
-    specs = "RMSpecs",
+    specs = "ArgSpecs",
     lambdas = "KernelLambdas",
     bs_samples = "BootSamples",
-    boot_models = "BootModels",
-    boot_omega = "BootOmega"
+    boot_omega = "BootOmegas"
   )
 )
 
 ### Class constructor
 #' @export
+#'
 FittedRM <- function(bootData, bootFun = sample, bootArgs) {
   final <- new("FittedRM")
   return(final)

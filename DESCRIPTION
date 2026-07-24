@@ -11,18 +11,24 @@ Roxygen: list(markdown = TRUE)
 Config/roxygen2/version: 8.0.0
 Collate: 
     'splitFunctions-utils.R'
+    'boot-utils.R'
     'AllGenerics.R'
     'AllClasses.R'
+    'ArgSpecs-methods.R'
     'BootModels-methods.R'
     'BootSamples-methods.R'
     'KernelProb-methods.R'
+    'KernlabClasses.R'
     'OOBLoss-methods.R'
     'RMPredictor-methods.R'
     'fit-methods.R'
     'logNormalize.R'
     'predict-methods.R'
     'random_machines.R'
+    'svm-utils.R'
     'utils.R'
+    'validity-utils.R'
+    'weight-utils.R'
 RoxygenNote: 7.3.1
 Suggests: 
     testthat (>= 3.0.0)

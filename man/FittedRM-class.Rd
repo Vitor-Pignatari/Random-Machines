@@ -13,7 +13,7 @@ Title FittedRM
 \section{Slots}{
 
 \describe{
-\item{\code{specs}}{RMSpecs.}
+\item{\code{specs}}{ArgSpecs.}
 
 \item{\code{lambdas}}{KernelLambdas.}
 
@@ -21,9 +21,10 @@ Title FittedRM
 
 \item{\code{boot_models}}{BootModels.}
 
-\item{\code{boot_omega}}{BootOmega.}
+\item{\code{boot_omegas}}{BootOmegas.}
 }}
 
 \examples{
 placeholder
+
 }

@@ -1,3 +1,5 @@
-test_that("multiplication works", {
-  expect_equal(2 * 2, 4)
+test_that("KernelLambdas Class has instanciated correctly", {
+  
+  KernelLambdas(loss = yardstick::accuracy_vec, probfun = logNormalize, lambdas = )
+  
 })

@@ -25,4 +25,12 @@ setGeneric("omegaCalc", function(metrics) standardGeneric("omegaCalc"))
 #' @return What it returns.
 setGeneric("displayInfo", function(object, ...) standardGeneric("displayInfo"))
 
+#' Method to build function calls
+#'
+#' Description.
+#'
+#' @param object A description of the argument.
+#' @return What it returns.
+setGeneric("buildCall", function(object, ...) standardGeneric("buildCall"))
+
 
