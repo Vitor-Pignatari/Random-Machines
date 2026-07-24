@@ -7,7 +7,7 @@ setClassUnion("NumOrFactor", c("numeric", "factor"))
 #' Title
 #'
 #' @slot data data.frame. 
-#' @slot formula formula. 
+#' @slot formula formula.
 #' @slot task character. 
 #' @slot prob logical. 
 #' @slot implementation character. 
@@ -457,30 +457,45 @@ setClass(
 #'
 #' @param specs 
 #' @param lambdas
-#'
-#' @returns
+#' @include boot-utils.R svm-utils.R
+#' @returns placeholder
 #' @export
 #'
 #' @examples
-BootOmegas <- function(specs, lambdas) {
+BootOmegas <- function(
+    specs = specs,
+    bootData,
+    svmcalls,
+    lambdas
+    ) {
   
-  modelcalls <- call_builder(specs, lambdas)
+  svmcalls <- call_builder(specs = specs)
   
   data <- eval(specs$data)
   
+  bootsamples <- BootSamples(
+    trainData = data,
+    bootFun   =  simple_bs,
+    bootArgs  = list(indexes = 1:nrow(data), B = specs$B)
+  )
+  
   indexes <- sample(
-    1:length(allcalls),
+    1:length(svmcalls),
     prob = lambdas,
     replace = TRUE,
     size = specs$B
   )
   
-  bootmodels <- apply_fit_calls(
+  bootmodels <- svm_fit_any(
     data = data,
-    svmcalls = allcalls,
+    svmcalls = svmcalls,
     datasplit = bootsamples@bootData,
-    metric_function = specs$metric_function
+    metric_function = specs$metric_function,
+    weight_function = specs$weight_function, 
+    indexes = indexes
   )
+  
+  omega_calc(omegaFunction = specs$weight_function)
   
   new(
     "BootOmegas",

@@ -13,3 +13,8 @@ test_that("BootSamples returns expected values when tested on mock example", {
   expect_equal(nrow(numindexes@bootData$train), nrow(iris))
   expect_equal(nrow(numindexes@bootData$test), nrow(iris))
 })
+
+
+a <- sapply(1:5, function(x){
+  return(1:10)
+})

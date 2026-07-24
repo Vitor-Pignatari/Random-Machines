@@ -39,7 +39,7 @@ call_builder <- function(specs) {
 }
 
 
-#' Apply SVM calls to all partitions of data split
+#' Fit and Predict SVM calls on all partitions of data split
 #'
 #' @param data placeholder
 #' @param datasplit placeholder
@@ -48,10 +48,10 @@ call_builder <- function(specs) {
 #' @param weight_function placeholder
 #' @param indexes placeholder
 #'
-#' @returns
+#' @returns placeholder
 #' @export
 #'
-#' @examples
+#' @examples placeholder
 svm_fit_any <- function(data,
                         datasplit,
                         svmcalls,
@@ -61,71 +61,129 @@ svm_fit_any <- function(data,
   
   if(is.null(indexes)){
     indk <- 1:length(svmcalls)
+  }else{
+    indk <- indexes
   }
   
-  # BootOmega case - One fit + prediction per kernel
-  if(indk > length(svmcalls)) {
+  # BootOmega case - One fit + prediction + metric per kernel - bootstrap sample
+  if(length(indk) > length(svmcalls)) {
     
     allkernels_fit <- lapply(indk, function(x) {
       # Metric storage
-      indx <- datasplit[["train"]][, x]
         
-      train <- data[1:nrow(data) %in% indx, ]
-        
-      newargs <- list(data = train, fit = FALSE)
+      newargs <- list(
+        data = data[datasplit[["train"]][, x], ], 
+        fit = FALSE
+      )
         
       svm.model <- eval(rlang::call_modify(svmcalls[[x]], !!!newargs))
         
-      
       return(svm.model)
     })
     
-    allkernels_predict <- sapply(allkernels_fit, function(x){
+    allkernels_predict <- lapply(1:length(allkernels_fit), function(x){
       
-      indx <- datasplit[["test"]][, x]
-      test <- data[indx, ]
-      pred <- predict(svm.model, test)
-      metrics[x] <- do.call(metric_function, list(test[[svm.model@terms[[2]]]], pred))
-      
-      return(metrics = metrics)  
+      pred <- kernlab::predict(allkernels_fit[[x]], data[datasplit[["test"]][, x], ])
+    
+      return(pred)
     })
     
-  # KernelLambdas case - R  * K models to have their metrics summarized
-  # Separate through method later on
-  }else{
+    allkernels_metric <- sapply(1:length(allkernels_predict), function(x) {
+      
+      metric <- do.call(
+        what = metric_function, 
+        args = list(
+          data[datasplit[["test"]][, x], as.character(svmcalls[[indk[x]]][[2]][[2]])], 
+          allkernels_predict[[x]]
+        )
+      )
+      return(metric)
+    })
+  
+    return(
+      list(fit = allkernels_fit,
+           predict = allkernels_predict,
+           metrics = allkernels_metric)
+    )
+    
+  # KernelLambdas case - Multiple fits + prediction + metric per kernel
+  }else if(length(indk) == length(svmcalls)){
     allkernels <- lapply(indk, function(x) {
       
       metrics <- numeric(ncol(datasplit[["train"]]))
       
-      allsvmfits <- lapply(1:ncol(datasplit[["train"]]), function(y) {
-        
-        indx <- datasplit[["train"]][, y]
-        
-        train <- data[1:nrow(data) %in% indx, ]
-        test <- data[!(1:nrow(data) %in% indx), ]
-        
-        newargs <- list(data = train, fit = FALSE)
+      allkernels_fit <- lapply(1:ncol(datasplit[["train"]]), function(y) {
+        # Metric storage
+        newargs <- list(
+          data = data[datasplit[["train"]][, y], ],
+          fit = FALSE
+        )
         
         svm.model <- eval(rlang::call_modify(svmcalls[[x]], !!!newargs))
         
-        pred <- predict(svm.model, test)
-        metrics[y] <<- do.call(metric_function, list(test[[svm.model@terms[[2]]]], pred))
-        
-        return(list(svm.model = svm.model))
+        return(svm.model)
       })
-      return(list(fits = allsvmfits, metrics = metrics))
+      
+      allkernels_predict <- lapply(1:length(allkernels_fit), function(y){
+        
+        pred <- kernlab::predict(allkernels_fit[[y]], data[datasplit[["test"]][, y], ])
+        
+        return(pred)
+      })
+      
+      allkernels_metric <- sapply(1:length(allkernels_predict), function(y) {
+        
+        metric <- do.call(
+          what = metric_function, 
+          args = list(
+            data[datasplit[["test"]][, y], as.character(svmcalls[[x]][[2]][[2]])],
+            allkernels_predict[[y]]
+          )
+        )
+        
+        return(metric)
+      })
+      
+      return(
+        list(fit = allkernels_fit,
+             predict = allkernels_predict,
+             metrics = allkernels_metric)
+      )
     })
+    names(allkernels) <- names(svmcalls)
+    return(allkernels)
   }
-  
-  names(allkernels_fit) <- 
   
   #names(allkernels) <- names(allcalls)[indk]
   #sapply(allkernels, function(x){mean()})
   #return(list(allkernels, omegas))
 }
 
+#' Kernel probabilities
+#'
+#' @param kernelMetrics placeholder
+#' @param omegaFunction placeholder 
+#'
+#' @returns placeholder
+#' @export
+#'
+#' @examples placeholder
+lambda_calc <- function(kernelMetrics, lambdaFunction){
+  means <- sapply(1:length(kernelMetrics), function(x){
+    avg <- mean(kernelMetrics[[x]][["metrics"]])
+  })
+  do.call(lambdaFunction, args = list(means))
+}
 
-
-omega_calc <- function(bootModels, omegaFunction){
-  
+#' Bootstrap model weight 
+#'
+#' @param bootMetrics placeholder
+#' @param omegaFunction placeholder
+#'
+#' @returns placeholder
+#' @export
+#'
+#' @examples placeholder
+omega_calc <- function(bootMetrics, omegaFunction){
+  do.call(omegaFunction, args = list(bootMetrics))
 }

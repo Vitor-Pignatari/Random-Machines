@@ -2,7 +2,7 @@ test_that("BootModels objects creation works successfully", {
   
   iris_bin <- iris[which(iris$Species %in% c("virginica", "setosa")), ]
   levels(iris_bin) <- c("virginica", "setosa")
-  
+
   specs <- list(
     formula        = Species ~ .,
     data           = quote(iris),
@@ -31,44 +31,44 @@ test_that("BootModels objects creation works successfully", {
     metric_function = yardstick::accuracy_vec,
     weight_function = default_weight_binary
   )
-  
-  allcalls <- call_builder(specs = specs)
-  
+
+  svmcalls <- call_builder(specs = specs)
+
   data = eval(specs$data)
-  
+
   bootsamples <- BootSamples(
     trainData = data,
     bootFun = simple_bs,
-    bootArgs = list(indexes = 1:nrow(data), B = specs$b)
+    bootArgs = list(indexes = 1:nrow(data), B = specs$B)
   )
-  
+
   lambdas <- c(0.32, 0.21, 0.47)
-  indexes <- sample(1:length(allcalls), prob = lambdas, replace = TRUE, size = specs$b)
+  indexes <- sample(1:length(svmcalls), prob = lambdas, replace = TRUE, size = specs$B)
   
-  bootmodels <- apply_fit_calls(
+  # For the lambdas case
+  bootmodels_lambdas <- svm_fit_any(
     data = data,
-    svmcalls = allcalls,
+    svmcalls = svmcalls,
     datasplit = bootsamples@bootData,
-    metric_function = specs$metric_function
+    metric_function = specs$metric_function,
+    weight_function = specs$weight_function, 
+    indexes = NULL
   )
   
-  # objs
-  nms <- slotNames(md)
-  sizes <- sapply(nms, function(x){
-    lobstr::obj_size(slot(md, x))
-  })
-  
-  lobstr::ref(bootmodels_bad$rbf$fits[[1]]@kcall)
-  lobstr::ref(bootmodels_bad$rbf$fits[[2]]@kcall)
-  lobstr::obj_size(lambdas)
-  
-  bootcalls <- sample(
-    1:length(allcalls),
-    size = specs$b,
-    replace = TRUE,
-    prob = lambdas
+  bootmodels <- svm_fit_any(
+    data = data,
+    svmcalls = svmcalls,
+    datasplit = bootsamples@bootData,
+    metric_function = specs$metric_function,
+    weight_function = specs$weight_function, 
+    indexes = indexes
   )
-  #BootModels(iris, bootData = bootsamples, models = allcalls, lambdas = lambdas)
+  
+  BootOmegas(
+    bootData = bootsamples,
+    svmcalls = svmcalls,
+    lambdas = lambdas
+  )
   
   expect_equal(2 * 2, 4)
 })
