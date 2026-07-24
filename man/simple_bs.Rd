@@ -22,6 +22,6 @@ Simple boostrap function
 }
 \examples{
 # data <- data.frame(a = c(1, 2, 3))
-# simple_bs(indexes = row.names(data), B = 100)
+# simple_bs(indexes = 1:nrow(data), B = 100)
 
 }

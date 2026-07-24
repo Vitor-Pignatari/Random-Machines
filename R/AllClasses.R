@@ -14,7 +14,7 @@ setClass(
     implementation = "character",
     kernels        = "character",
     args           = "list",
-    b              = "numeric",
+    B              = "numeric",
     lambdaMetric   = "function",
     # Will require at least virtual class
     lambdaFunction = "function",
@@ -206,12 +206,12 @@ setValidity(Class = "ArgSpecs", function(object) {
   #   errors <- c(errors, "'kernels' must be a valid kernlab function")
   # }
   
-  # b
-  if (length(object@b) > 1) {
-    return("'b' must have lenght 1")
+  # B
+  if (length(object@B) > 1) {
+    return("'B' must have length 1")
   }
-  if (!is.integer(object@b)) {
-    return("'b' must be an integer")
+  if (!is.integer(object@B)) {
+    return("'B' must be an integer")
   }
   
   TRUE
@@ -252,35 +252,6 @@ KernelSamples <- function(data, splitfun) {
   new('KernelSamples', data = data, splitfun = splitfun)
 }
 
-#' Trained models for each KernelSamples
-#'
-#' Models (one per kernel) fitted to specified splits (or no split)
-#'
-#' @slot models list containing all trained models
-#' @slot data   list of data splits each training process used
-setClass(
-  Class = "KernelModels",
-  slots = c(models = "list", data   = "list"),
-  prototype = list(models = list(), data   = list())
-)
-
-setValidity("KernelModels", function(object) {
-  TRUE
-})
-
-setValidity(Class = "KernelModels", function(object) {
-  if (!all(sapply(modelos, function(x) {
-    class(x)
-  }) == 'ksvm')) {
-    return("'models' must be a list of objects of class 'ksvm'")
-  }
-  TRUE
-})
-
-KernelModels <- function(models, data) {
-  new('KernelModels', models = models, data = data)
-}
-
 #' Internal S4 class for RM 1st stage representation
 #'
 #' @slot models List of SVMs trained.
@@ -291,16 +262,9 @@ KernelModels <- function(models, data) {
 setClass(
   Class = "KernelLambdas",
   slots = list(
-    models  = "list",
-    splits  = "matrix",
-    loss    = "matrix",
-    lambdas = "numeric"
-  ),
-  prototype = list(
-    models  = list(),
-    splits  = matrix(1:10),
-    loss    = matrix(1:10),
-    lambdas = 1:10
+    kernelModels = "list",
+    kernelMetrics  = "numeric",
+    kernelLambdas = "numeric"
   )
 )
 
@@ -312,11 +276,9 @@ setValidity(Class = "KernelLambdas", function(object) {
 KernelLambdas <- function(models, splits, loss, probfun, lambdas) {
   new(
     'KernelLambdas',
-    models = models,
-    splits = splits,
-    loss = loss,
-    probfun = probfun,
-    lambdas = lambdas
+    kernelModels = list(),
+    kernelMetrics  = numeric(),
+    kernelLambdas = numeric()
   )
 }
 
@@ -334,7 +296,7 @@ setClass(
   slots = list(
     bootFun     = "function",
     bootArgs    = "list",
-    bootData = "list"
+    bootData    = "list"
   ),
   prototype = list(
     bootFun = simple_bs,
@@ -346,8 +308,8 @@ setClass(
 setValidity(
   Class = "BootSamples",
   method = function(object) {
-    # object@bootData[["train"]] is n x b rows matrix with values indicating row number/name in original sample
-    # object@bootData[["test"]] is n x b rows matrix with values indicating whether sample is in test or not
+    # object@bootData[["train"]] is N x B rows matrix with values indicating row number/name in original sample
+    # object@bootData[["test"]] is N x B rows matrix with values indicating whether sample is in test or not
     nameVal <- setequal(names(object@bootData), c("train", "test"))
     
     # bootData must be a list of length 2
@@ -416,61 +378,47 @@ BootSamples <- function(trainData, bootFun = simple_bs, bootArgs) {
 
 #' An S4 class representing a user profile
 #'
-#' @slot bootData A character string representing the user's name.
-#' @slot bootPredict An integer representing the user's age.
-#'
-setClass(
-  Class = "BootModels", 
-  slots = list(
-    BootModels = "list",
-    bootPredict = "list",
-    bootMetrics = "matrix"
-  ),
-  prototype = list(
-    bootPredict = list(
-      "train" = matrix(),
-      "test" = matrix()
-    ),
-    bootMetrics = matrix()
-  )
-)
-
-#' Helper constructor for BootModels
-#'
-#' @param trainData Original training data
-#' @param bootData Result slot from BootSamples
-#' @param models Result slot from KernelLambdas
-#' @param lambdas Result slot from KernelModels
-#'
-#' @returns BootModels S4 object
-#' @export
-#'
-#' @examples placeholder
-
-BootModels <- function(trainData, bootData, models, lambdas) {
-  
-  sampmodels <- sample(1:length(allcalls), size = specs$b, prob = lambdas, replace = TRUE)
-  bootmodels <- apply_calls(data = iris, svmcalls = allcalls, datasplit = samp_iris, indexes = sampmodels)
-  
-  new(
-    "BootModels",
-    bootModels = bootmodels
-  )
-}
-
-#' An S4 class representing a user profile
-#'
 #' @slot omegaMetrics placeholder
 #' @slot omegaFunction placeholder
 #'
 setClass(
-  Class = "BootOmega",
+  Class = "BootOmegas",
   slots = list(
-    omegaMetrics  = "numeric",
-    omegaFunction = "numeric",
-    omegaPredictions = "matrix"
+    bootModels = "list",
+    bootMetrics  = "numeric",
+    bootOmegas = "numeric"
   )
 )
+
+#' BootOmegas constructor function
+#'
+#' @param specs 
+#' @param lambdas
+#'
+#' @returns
+#' @export
+#'
+#' @examples
+BootOmegas <- function(specs, lambdas) {
+  
+  modelcalls <- call_builder(specs, lambdas)
+  
+  data <- eval(specs$data)
+  
+  indexes <- sample(
+    1:length(allcalls),
+    prob = lambdas,
+    replace = TRUE,
+    size = specs$B
+  )
+  
+  bootmodels <- apply_calls(data = iris, svmcalls = allcalls, datasplit = samp_iris, indexes = sampmodels)
+  
+  new(
+    "BootOmegas",
+    bootModels = bootmodels
+  )
+}
 
 #' Title FittedRM
 #'
@@ -478,7 +426,7 @@ setClass(
 #' @slot lambdas KernelLambdas.
 #' @slot bs_samples BootSamples.
 #' @slot boot_models BootModels.
-#' @slot boot_omega BootOmega.
+#' @slot boot_omegas BootOmegas.
 #'
 #' @return placeholder
 #' @export
@@ -493,7 +441,7 @@ setClass(
     lambdas = "KernelLambdas",
     bs_samples = "BootSamples",
     boot_models = "BootModels",
-    boot_omega = "BootOmega"
+    boot_omega = "BootOmegas"
   )
 )
 

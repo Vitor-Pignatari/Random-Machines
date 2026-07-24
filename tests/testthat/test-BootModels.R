@@ -4,8 +4,8 @@ test_that("BootModels objects creation works successfully", {
   levels(iris_bin) <- c("virginica", "setosa")
   
   specs <- list(
-    data           = quote(iris_bin),
     formula        = Species ~ .,
+    data           = quote(iris),
     task           = "binary",
     prob           = FALSE,
     implementation = "kernlab",
@@ -27,52 +27,42 @@ test_that("BootModels objects creation works successfully", {
         kernel = kernlab::polydot(degree = 1, scale = 1)
       )
     ),
-    b = 1000,
-    lambdaMetric   = yardstick::accuracy_vec
+    b = 100,
+    metric_function = yardstick::accuracy_vec,
+    weight_function = 
   )
   
   allcalls <- call_builder(specs = specs)
   
   data = eval(specs$data)
   
-  bootsamples <- BootSamples(trainData = data,
-                             bootFun = simple_bs,
-                             bootArgs = list(
-                               indexes = 1:nrow(data), B = specs$b)
-                             )
+  bootsamples <- BootSamples(
+    trainData = data,
+    bootFun = simple_bs,
+    bootArgs = list(indexes = 1:nrow(data), B = specs$b)
+  )
   
-  bootmodels <- apply_calls(
+  lambdas <- c(0.32, 0.21, 0.47)
+  indexes <- sample(1:length(allcalls), prob = lambdas, replace = TRUE, size = specs$b)
+  
+  devtools::load_all()
+  
+  bootmodels <- apply_fit_calls(
     data = data,
     svmcalls = allcalls,
     datasplit = bootsamples@bootData,
-    indexes = NULL
+    metric_function = specs$metric_function
   )
   
-  # kernlab fitted model size inspection
-  md <- bootmodels$rbf$fits[[10]]$svm.model
-  bootmodels.model.size <- object.size(md)
+  # objs
   nms <- slotNames(md)
   sizes <- sapply(nms, function(x){
-    object.size(slot(md, x))
+    lobstr::obj_size(slot(md, x))
   })
-  sort(sizes/sum(sizes), decreasing = TRUE)
-  md@kcall <- quote(function(){""})
   
-  methods::slotNames(bootmodels$rbf[[10]]$svm.model)
+  lobstr::ref(bootmodels_bad$rbf$fits[[1]]@kcall)
+  lobstr::ref(bootmodels_bad$rbf$fits[[2]]@kcall)
   
-  
-  a <- as.symbol("param")
-  bootmodels$rbf[[10]]$svm.model
-  
-  methods::slot()
-  bootmodels.model.size * specs$b * length(allcalls)
-  
-  print(bootmodels.model.size, quote = FALSE, units = "Mb", standard = "auto",
-        digits = 2L)
-  print(bootmodels.size, quote = FALSE, units = "Mb", standard = "auto",
-        digits = 2L)
-  
-  lambdas <- c(0.32, 0.21, 0.47)
   lobstr::obj_size(lambdas)
   bootcalls <- sample(
     1:length(allcalls),

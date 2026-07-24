@@ -10,17 +10,17 @@
 #'
 #' @examples
 #' # data <- data.frame(a = c(1, 2, 3))
-#' # simple_bs(indexes = row.names(data), B = 100)
+#' # simple_bs(indexes = 1:nrow(data), B = 100)
 #'
 simple_bs <- function(indexes, B) {
   
-  if(!(class(indexes) %in% c("numeric", "integer"))){
-    stop("Argument 'indexes' must be of class 'numeric' or 'integer'", call. = FALSE)  
+  if(class(indexes) != "integer"){
+    stop("Argument 'indexes' must be of class integer'", call. = FALSE)  
   }
   
   n <- length(indexes)
   
-  bsmatrix <- matrix(nrow = length(indexes), ncol =  B)
+  bsmatrix <- matrix(nrow = length(indexes), ncol = B)
   bsmatrix <- apply(bsmatrix, MARGIN = 2, function(x){
     sample(indexes, replace = TRUE, size = n)
   })

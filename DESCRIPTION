@@ -17,6 +17,7 @@ Collate:
     'BootModels-methods.R'
     'BootSamples-methods.R'
     'KernelProb-methods.R'
+    'KernlabClasses.R'
     'OOBLoss-methods.R'
     'RMPredictor-methods.R'
     'fit-methods.R'
