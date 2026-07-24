@@ -250,7 +250,7 @@ setValidity(Class = "ArgSpecs", function(object) {
     return("'omegaFunction' must return a vector with the same length as the input.")
   }
   
-  if (object$task == 'Regression') {
+  if (object@task == 'Regression') {
     if (!isTRUE(all.equal(sum(res), 1))) {
       return("'omegaFunction' must return values whose sum is 1.")
     }
@@ -286,12 +286,13 @@ setClass(
   slots = c(
     data      = "list",
     splitfun  = "function",
-    splitargs = list()
+    splitargs = "list"
   ),
   prototype  = list(
     data     = list(),
     splitfun = function(x){
-    }
+    },
+    splitargs = list()
   )
 )
 
@@ -304,8 +305,12 @@ setValidity(Class = "KernelSamples", function(object) {
   TRUE
 })
 
-KernelSamples <- function(data, splitfun) {
-  new('KernelSamples', data = data, splitfun = splitfun)
+KernelSamples <- function(splitfun, splitargs) {
+  
+  newData <- do.call(splitfun, splitargs)
+  
+  new('KernelSamples', data = newData, splitfun = splitfun, splitargs = splitargs)
+  
 }
 
 #' Internal S4 class for RM 1st stage representation
@@ -329,7 +334,7 @@ setValidity(Class = "KernelLambdas", function(object) {
 })
 
 #' An S4 class representing bootsrap data - works with rsample "bootstraps" function by default
-KernelLambdas <- function(models, splits, loss, probfun, lambdas) {
+KernelLambdas <- function(loss, probfun, lambdas) {
   new(
     'KernelLambdas',
     kernelModels = list(),
@@ -418,6 +423,8 @@ setValidity(
 #' @param bootArgs Arguments to bootstrap function
 #'
 #' @return placeholder
+#' @include splitFunctions-utils.R
+#' 
 #' @export
 #'
 #' @examples placeholder
