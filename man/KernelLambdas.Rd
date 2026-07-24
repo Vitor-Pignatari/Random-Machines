@@ -4,7 +4,7 @@
 \alias{KernelLambdas}
 \title{An S4 class representing bootsrap data - works with rsample "bootstraps" function by default}
 \usage{
-KernelLambdas(models, splits, loss, probfun, lambdas)
+KernelLambdas(loss, probfun, lambdas)
 }
 \description{
 An S4 class representing bootsrap data - works with rsample "bootstraps" function by default

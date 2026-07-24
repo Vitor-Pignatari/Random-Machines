@@ -243,12 +243,12 @@ RMSpecs <- function(x = x,
 setClass(
   Class = "KernelSamples",
   slots = c(
-    data     = "matrix",
+    data     = "list",
     splitfun = "function",
     splitargs = "list"
   ),
   prototype = list(
-    data     = matrix(),
+    data     = data.frame(),
     splitfun = function(x) {},
     splitargs = list()
   )
@@ -266,7 +266,7 @@ setValidity(Class = "KernelSamples", function(object) {
   TRUE
 })
 
-KernelSamples <- function(data, splitfun, splitargs) {
+KernelSamples <- function(splitfun, splitargs) {
   
   newData <- do.call(splitfun, splitargs)
   
@@ -340,7 +340,7 @@ KernelLambdas <- function(loss, probfun, lambdas) {
 #' @slot bootArgs Arguments passed to bootstrap function
 #' @slot bootData Bootstrap data stored after samples are generated
 #'
-#' @include bootstrap.R
+#' @include splitFunctions-utils.R
 #'
 
 setClass(
@@ -414,6 +414,8 @@ setValidity(
 #' @param bootArgs Arguments to bootstrap function
 #'
 #' @return placeholder
+#' @include splitFunctions-utils.R
+#' 
 #' @export
 #'
 #' @examples placeholder
@@ -422,7 +424,6 @@ BootSamples <- function(trainData, bootFun = simple_bs, bootArgs) {
   bootData <- do.call(bootFun, args = bootArgs)
   new(
     "BootSamples",
-    trainData = trainData,
     bootData = bootData,
     bootFun = bootFun,
     bootArgs = bootArgs

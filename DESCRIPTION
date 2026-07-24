@@ -10,7 +10,7 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 Config/roxygen2/version: 8.0.0
 Collate: 
-    'bootstrap.R'
+    'splitFunctions-utils.R'
     'AllGenerics.R'
     'AllClasses.R'
     'BootModels-methods.R'
@@ -19,6 +19,7 @@ Collate:
     'OOBLoss-methods.R'
     'RMPredictor-methods.R'
     'fit-methods.R'
+    'logNormalize.R'
     'predict-methods.R'
     'random_machines.R'
     'utils.R'

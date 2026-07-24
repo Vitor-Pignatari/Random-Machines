@@ -10,8 +10,8 @@ An S4 class representing a user profile
 \section{Slots}{
 
 \describe{
-\item{\code{models}}{A character string representing the user's name.}
+\item{\code{bootData}}{A character string representing the user's name.}
 
-\item{\code{data}}{An integer representing the user's age.}
+\item{\code{bootPredict}}{An integer representing the user's age.}
 }}
 

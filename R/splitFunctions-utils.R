@@ -8,12 +8,21 @@
 #' @return a matrix
 #'
 #' @examples
-function(df, K = 5, y, balanced = TRUE) {
+stratifiedKfold <- function(df, K = 5, y, balanced = TRUE) {
   stopifnot(is.data.frame(df), K >= 2, y %in% names(df))
   n <- nrow(df)
   yv <- df[[y]]
+  cs <- length(unique(yv))
+
   all_idx <- seq_len(n)
   
+  if ((n/K)%%cs != 0) {
+    # n1 <- (floor(n/K)+(cs))*K
+    n1 <- ceiling((n/K)/cs)*cs
+  } else {
+    n1 <- n
+  }
+  # div <- n1/K
   
   # helper: embaralha e reparte um vetor de índices em K partes (aprox. iguais)
   split_into_k <- function(idx, K) {
@@ -32,26 +41,45 @@ function(df, K = 5, y, balanced = TRUE) {
     class_splits <- lapply(split(all_idx, yv), split_into_k, K = K)
   } else {
     # cria K partições
-    class_splits <- split_into_k(1:150, 5)
+    class_splits <- split_into_k(all_idx, K)
   }
   
-  folds <- matrix(rep(0, K*n), ncol = K)
+  out_of_folds <- matrix(rep(TRUE, K*n), ncol = K)
+  samples <- matrix(nrow = n1, ncol = K)
   
   if (balanced == TRUE) {
     # monta folds: em cada k, junta as partes k de todas as classes
     for (i in 1:K) {
       split <- unlist(lapply(class_splits, function(x) x[[i]]))
-      folds[split,i] <- 1
+      
+      if (length(split) < n1) {
+        split <- c(split, rep(NA, n1 - length(split)))
+      }
+      
+      samples[,i] <- split
+      out_of_folds[split,i] <- FALSE
     }
   } else {
     # monta folds em cada k
     for (i in 1:K) {
       split <- class_splits[[i]]
-      folds[split,i] <- 1
+      
+      if (length(split) < n1) {
+        split <- c(split, rep(NA, n1 - length(split)))
+      }
+      
+      samples[,i] <- split
+      out_of_folds[split,i] <- FALSE
     }
   }
   
-  folds
+  return(
+    list(
+      split = samples,
+      index = out_of_folds
+    )
+  )
+  
 }
 
 
@@ -65,28 +93,34 @@ function(df, K = 5, y, balanced = TRUE) {
 #' @return a matrix
 #'
 #' @examples
-function(df, p, y, balanced = TRUE) {
+simpleHoldout <- function(df, p, y, balanced = TRUE) {
   n <- nrow(df)
   yv <- df[[y]]
   all_idx <- seq_len(n)
   
-  folds <- matrix(rep(0, 2*n), ncol = 2)
+  out_of_folds <- matrix(rep(TRUE, n), ncol = 1)
+  samples <- matrix(nrow = round(0.75*n, 0), ncol = 1)
   
   if (balanced == TRUE) {
     class_splits <- split(all_idx, yv)
-    sam1 <- vector('integer')
+    sam <- vector('integer')
     
     for (i in 1:length(class_splits)) {
-      sam1 <- c(sam1, sample(class_splits[[i]], size = p * length(class_splits[[i]])))
+      sam <- c(sam, sample(class_splits[[i]], size = round(p * length(class_splits[[i]]), 0) ))
     }
   } else {
-    sam1 <- sample(all_idx, p * n)
+    sam <- sample(all_idx, p * n)
   }
   
-  folds[sam1, 1] <- 1
-  folds[all_idx[-sam1], 2] <- 1
+  out_of_folds[sam, 1] <- FALSE
+  sam <- as.matrix(sam)
   
-  return(folds)
+  return(
+    list(
+      split = sam,
+      index = out_of_folds
+    )
+  )
 }
 
 #' Simple boostrap function
@@ -132,4 +166,3 @@ reverse_bs <- function(bs_result, original_data){
   
   return(list("Resamples" = bsmatrix, "OOB" = oob))
 }
-
