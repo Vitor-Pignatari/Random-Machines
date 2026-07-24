@@ -298,13 +298,24 @@ setClass(
 
 setValidity(Class = "KernelSamples", function(object) {
   # Ad
-  if (length(object@splitfun(iris)) != 2) {
+  if (length(
+    do.call(object@splitfun, object@splitargs)
+    ) != 2) {
     return("splitfun must return a list with two elements, the resample matrix and test matrix")
   }
   # Usar como base o vfold_cv
   TRUE
 })
 
+#' Create a KernelSamples object
+#'
+#' @param splitfun splitfunction that will be used to split the data
+#' @param splitargs arguments of the split function
+#'
+#' @return a KernelSamples object
+#' @export
+#'
+#' @examples Placeholder
 KernelSamples <- function(splitfun, splitargs) {
   
   newData <- do.call(splitfun, splitargs)
@@ -333,7 +344,13 @@ setValidity(Class = "KernelLambdas", function(object) {
   TRUE
 })
 
-#' An S4 class representing bootsrap data - works with rsample "bootstraps" function by default
+#' KernelLambdas helper constructor
+#' 
+#' build a KernelLambdas object
+#'
+#' @param loss Loss function to be computed 
+#' @param probfun function that assigns a selection probability based on the metrics
+#' @param lambdas kernel selection probabilities
 KernelLambdas <- function(loss, probfun, lambdas) {
   new(
     'KernelLambdas',

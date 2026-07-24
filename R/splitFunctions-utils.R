@@ -5,7 +5,7 @@
 #' @param y name of target column
 #' @param balanced makes the folds have the same proportion of classes (TRUE by default)
 #'
-#' @return a matrix
+#' @return a list with train and test elements for modeling
 #'
 #' @examples
 stratifiedKfold <- function(df, K = 5, y, balanced = TRUE) {
@@ -90,7 +90,7 @@ stratifiedKfold <- function(df, K = 5, y, balanced = TRUE) {
 #' @param y name of target column
 #' @param balanced makes the folds have the same proportion of classes (TRUE by default)
 #'
-#' @return a matrix
+#' @return a list with train and test elements for modeling
 #'
 #' @examples
 simpleHoldout <- function(df, p, y, balanced = TRUE) {
