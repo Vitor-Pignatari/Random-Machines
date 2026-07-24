@@ -4,6 +4,29 @@ NULL
 #' Virtual Class containing arguments passed to the main RM function
 setClassUnion("NumOrFactor", c("numeric", "factor"))
 
+#' Title
+#'
+#' @slot data data.frame. 
+#' @slot formula formula. 
+#' @slot task character. 
+#' @slot prob logical. 
+#' @slot implementation character. 
+#' @slot kernels character. 
+#' @slot args list. 
+#' @slot B numeric. 
+#' @slot lambdaMetric function. 
+#' @slot lambdaFunction function. 
+#' @slot omegaMetric function. 
+#' @slot omegaFunction function. 
+#'
+#' @returns placeholder
+#' 
+#' @include weight-utils.R
+#' 
+#' @examples
+#' 
+#' @export
+
 setClass(
   Class = "ArgSpecs",
   slots = list(

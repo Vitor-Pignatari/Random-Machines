@@ -3,6 +3,8 @@
 export(BootOmegas)
 export(BootSamples)
 export(FittedRM)
+export(log_normalize)
 export(randomMachines)
+exportClasses(ArgSpecs)
 exportClasses(FittedRM)
 import(kernlab)
