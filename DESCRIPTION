@@ -10,6 +10,7 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 Config/roxygen2/version: 8.0.0
 Collate: 
+    'svm-utils.R'
     'splitFunctions-utils.R'
     'boot-utils.R'
     'weight-utils.R'
@@ -26,7 +27,6 @@ Collate:
     'logNormalize.R'
     'predict-methods.R'
     'random_machines.R'
-    'svm-utils.R'
     'utils.R'
     'validity-utils.R'
 RoxygenNote: 7.3.1

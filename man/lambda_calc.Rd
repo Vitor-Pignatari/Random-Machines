@@ -4,7 +4,7 @@
 \alias{lambda_calc}
 \title{Kernel probabilities}
 \usage{
-lambda_calc(kernelMetrics, omegaFunction)
+lambda_calc(kernelMetrics, lambdaFunction)
 }
 \arguments{
 \item{kernelMetrics}{placeholder}
