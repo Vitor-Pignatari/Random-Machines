@@ -15,7 +15,7 @@
 simple_bs <- function(indexes, B) {
   
   if(class(indexes) != "integer"){
-    stop("Argument 'indexes' must be of class integer'", call. = FALSE)  
+    stop("Argument 'indexes' must be of class 'integer'", call. = FALSE)  
   }
   
   n <- length(indexes)

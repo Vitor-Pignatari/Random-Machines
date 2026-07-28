@@ -3,15 +3,20 @@
 \docType{class}
 \name{BootOmegas-class}
 \alias{BootOmegas-class}
-\title{An S4 class representing a user profile}
+\title{Bootstrap models and their weights (omegas)}
 \description{
-An S4 class representing a user profile
+Bootstrap models and their weights (omegas)
 }
 \section{Slots}{
 
 \describe{
-\item{\code{omegaMetrics}}{placeholder}
+\item{\code{specs}}{the ArgSpecs object the ensemble was built from; carried so the
+object is self-contained for prediction dispatch (task + \code{prob})}
 
-\item{\code{omegaFunction}}{placeholder}
+\item{\code{bootModels}}{list of fitted bootstrap SVM models}
+
+\item{\code{bootMetrics}}{numeric vector of per-model out-of-bag metrics}
+
+\item{\code{bootOmegas}}{numeric vector of per-model weights (omegas)}
 }}
 

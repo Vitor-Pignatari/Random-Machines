@@ -2,35 +2,33 @@
 % Please edit documentation in R/svm-utils.R
 \name{svm_fit_any}
 \alias{svm_fit_any}
-\title{Fit and Predict SVM calls on all partitions of data split}
+\title{Fit and Predict SVM calls on all partitions of a data split}
 \usage{
-svm_fit_any(
-  data,
-  datasplit,
-  svmcalls,
-  metric_function,
-  weight_function,
-  indexes = NULL
-)
+svm_fit_any(specs, data, datasplit, svmcalls, metric_function, indexes = NULL)
 }
 \arguments{
-\item{data}{placeholder}
+\item{specs}{an ArgSpecs object; drives per-case prediction dispatch}
 
-\item{datasplit}{placeholder}
+\item{data}{the full training data.frame}
 
-\item{svmcalls}{placeholder}
+\item{datasplit}{list with \code{train}/\code{test} column-per-partition matrices}
 
-\item{metric_function}{placeholder}
+\item{svmcalls}{list of ksvm calls from \code{\link[=call_builder]{call_builder()}}}
 
-\item{weight_function}{placeholder}
+\item{metric_function}{metric applied to (truth, hard prediction)}
 
-\item{indexes}{placeholder}
+\item{indexes}{NULL for the KernelLambdas case (every kernel over every
+fold); a length-B vector of sampled kernel indices for the BootOmegas case
+(one bootstrap replicate per index)}
 }
 \value{
-placeholder
+For the BootOmegas case, a list(fit, predict, metrics); for the
+KernelLambdas case, one such list per kernel.
 }
 \description{
-Fit and Predict SVM calls on all partitions of data split
+Prediction is routed through the \code{\link[=svmPredict]{svmPredict()}} generic, so probabilistic
+models yield class-probability matrices while vote models yield class
+factors. The weighting metric is always computed on hard classes.
 }
 \examples{
 placeholder

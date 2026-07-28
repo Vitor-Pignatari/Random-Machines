@@ -4,11 +4,19 @@
 \alias{BootOmegas}
 \title{BootOmegas constructor function}
 \usage{
-BootOmegas(specs = specs, bootData, svmcalls, lambdas)
+BootOmegas(specs, bootData, svmcalls, lambdas)
+}
+\arguments{
+\item{specs}{placeholder}
+
+\item{lambdas}{placeholder}
 }
 \value{
 placeholder
 }
 \description{
 BootOmegas constructor function
+}
+\examples{
+placeholder
 }

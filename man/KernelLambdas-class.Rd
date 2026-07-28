@@ -10,12 +10,10 @@ Internal S4 class for RM 1st stage representation
 \section{Slots}{
 
 \describe{
-\item{\code{models}}{List of SVMs trained.}
+\item{\code{kernelModels}}{per-kernel list of the cross-validation fold models}
 
-\item{\code{splits}}{Matrix representing data splits used in loss computation}
+\item{\code{kernelMetrics}}{per-kernel mean out-of-fold metric}
 
-\item{\code{errors}}{Per-split errors}
-
-\item{\code{kprobs}}{resulting probabilities}
+\item{\code{kernelLambdas}}{per-kernel selection probability (sums to 1)}
 }}
 

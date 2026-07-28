@@ -38,3 +38,7 @@ Title
 \item{\code{omegaFunction}}{function.}
 }}
 
+\examples{
+placeholder
+
+}

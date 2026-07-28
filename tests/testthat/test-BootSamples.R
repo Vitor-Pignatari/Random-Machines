@@ -8,13 +8,8 @@ test_that("BootSamples returns expected values when tested on mock example", {
   numindexes <- BootSamples(trainData = iris,
                    bootArgs = list(indexes = 1:nrow(iris), B = 100))
   
-  expect_error(charindexes(), "Argument 'indexes' must be of class 'numeric' or 'integer'")
+  expect_error(charindexes(), "Argument 'indexes' must be of class 'integer'")
   expect_equal(dim(numindexes@bootData$train), dim(numindexes@bootData$test))
   expect_equal(nrow(numindexes@bootData$train), nrow(iris))
   expect_equal(nrow(numindexes@bootData$test), nrow(iris))
-})
-
-
-a <- sapply(1:5, function(x){
-  return(1:10)
 })

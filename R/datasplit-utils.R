@@ -1,3 +1,34 @@
+#' K-fold cross-validation split in the train/test convention
+#'
+#' Produces a fold assignment and returns it as the logical `train`/`test`
+#' matrices the rest of the pipeline consumes (as [simple_bs()] does): column
+#' `k` selects, for fold `k`, the training rows (`train`) and the held-out rows
+#' (`test`). When a response vector `y` is supplied the folds are stratified so
+#' each class is spread evenly across folds; otherwise they are assigned at
+#' random (suitable for regression).
+#'
+#' @param n number of observations
+#' @param K number of folds
+#' @param y optional response vector (length `n`); stratifies when provided
+#'
+#' @return `list(train, test)` of n-by-K logical matrices (`TRUE` = selected)
+#'
+#' @examples placeholder
+kfold_cv <- function(n, K = 5, y = NULL) {
+  fold <- integer(n)
+  if (!is.null(y)) {
+    for (lv in unique(y)) {
+      idx <- which(y == lv)
+      fold[idx] <- sample(rep(seq_len(K), length.out = length(idx)))
+    }
+  } else {
+    fold <- sample(rep(seq_len(K), length.out = n))
+  }
+  train <- sapply(seq_len(K), function(k) fold != k)  # TRUE = train row for fold k
+  test  <- !train                                     # TRUE = held-out row for fold k
+  list(train = train, test = test)
+}
+
 #' Create stratified kfold samples
 #'
 #' @param df a data frame
@@ -7,7 +38,7 @@
 #'
 #' @return a list with train and test elements for modeling
 #'
-#' @examples
+#' @examples placeholder
 stratifiedKfold <- function(df, K = 5, y, balanced = TRUE) {
   stopifnot(is.data.frame(df), K >= 2, y %in% names(df))
   n <- nrow(df)
@@ -82,7 +113,6 @@ stratifiedKfold <- function(df, K = 5, y, balanced = TRUE) {
   
 }
 
-
 #' Create simple holdouts
 #'
 #' @param df data frame that will be splited
@@ -92,7 +122,7 @@ stratifiedKfold <- function(df, K = 5, y, balanced = TRUE) {
 #'
 #' @return a list with train and test elements for modeling
 #'
-#' @examples
+#' @examples placeholder
 simpleHoldout <- function(df, p, y, balanced = TRUE) {
   n <- nrow(df)
   yv <- df[[y]]
