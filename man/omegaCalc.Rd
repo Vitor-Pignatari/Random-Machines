@@ -2,7 +2,8 @@
 % Please edit documentation in R/AllGenerics.R
 \name{omegaCalc}
 \alias{omegaCalc}
-\title{Omega calculation}
+\title{Omega calculation - setting the generic allows for building different functions as methods for the BootOmega class
+Ideally, a restricted number of methods would exist to operate on the class to calculate omegas}
 \usage{
 omegaCalc(metrics)
 }

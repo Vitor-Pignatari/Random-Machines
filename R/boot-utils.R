@@ -10,14 +10,17 @@
 #'
 #' @examples
 #' # data <- data.frame(a = c(1, 2, 3))
-#' # simple_bs(indexes = row.names(data), B = 100)
+#' # simple_bs(indexes = 1:nrow(data), B = 100)
 #'
-#' @export
 simple_bs <- function(indexes, B) {
+  
+  if(class(indexes) != "integer"){
+    stop("Argument 'indexes' must be of class 'integer'", call. = FALSE)  
+  }
   
   n <- length(indexes)
   
-  bsmatrix <- matrix(nrow = length(indexes), ncol =  B)
+  bsmatrix <- matrix(nrow = length(indexes), ncol = B)
   bsmatrix <- apply(bsmatrix, MARGIN = 2, function(x){
     sample(indexes, replace = TRUE, size = n)
   })
@@ -29,6 +32,15 @@ simple_bs <- function(indexes, B) {
   return(list("train" = bsmatrix, "test" = oob))
 }
 
+#' reverse_bs
+#'
+#' @param bs_result placeholder
+#' @param original_data placeholder
+#'
+#' @returns placeholder
+#'
+#' @examples placeholder
+#' 
 reverse_bs <- function(bs_result, original_data){
   
   bsmatrix <- apply(bs_result[["train"]], MARGIN = 2, function(x) {

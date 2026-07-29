@@ -2,7 +2,8 @@
 % Please edit documentation in R/AllGenerics.R
 \name{lambdaCalc}
 \alias{lambdaCalc}
-\title{Lambda calculation}
+\title{Lambdas calculation - setting the generic allows for building different functions as methods for the KernelLambdas class
+Ideally, a restricted number of methods would exist to operate on the class to calculate Lambdas}
 \usage{
 lambdaCalc(metrics)
 }

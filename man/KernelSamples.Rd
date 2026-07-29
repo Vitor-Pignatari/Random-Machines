@@ -4,6 +4,17 @@
 \name{KernelSamples}
 \alias{KernelSamples}
 \title{Initial model training data}
+\usage{
+KernelSamples(splitfun, splitargs)
+}
+\arguments{
+\item{splitfun}{splitfunction that will be used to split the data}
+
+\item{splitargs}{arguments of the split function}
+}
+\value{
+a KernelSamples object
+}
 \description{
 training data splits and validation setequal
 }
@@ -15,3 +26,6 @@ training data splits and validation setequal
 \item{\code{splitfun}}{data splitting function}
 }}
 
+\examples{
+Placeholder
+}

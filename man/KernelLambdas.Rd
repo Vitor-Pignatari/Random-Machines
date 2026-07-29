@@ -2,10 +2,24 @@
 % Please edit documentation in R/AllClasses.R
 \name{KernelLambdas}
 \alias{KernelLambdas}
-\title{An S4 class representing bootsrap data - works with rsample "bootstraps" function by default}
+\title{KernelLambdas constructor}
 \usage{
-KernelLambdas(models, splits, loss, probfun, lambdas)
+KernelLambdas(specs, kernelSamples, svmcalls)
+}
+\arguments{
+\item{specs}{an ArgSpecs object (from \code{\link[=random_machines]{random_machines()}})}
+
+\item{kernelSamples}{a KernelSamples object whose \code{data} is a \code{train}/\code{test}
+split (see \code{\link[=kfold_cv]{kfold_cv()}})}
+
+\item{svmcalls}{per-kernel ksvm calls from \code{\link[=call_builder]{call_builder()}}}
+}
+\value{
+a KernelLambdas object
 }
 \description{
-An S4 class representing bootsrap data - works with rsample "bootstraps" function by default
+Runs the kernel-selection (lambda) stage: fits every kernel across the
+cross-validation folds carried by \code{kernelSamples}, averages each kernel's
+out-of-fold metric, and maps those means to selection probabilities with the
+spec's \code{lambdaFunction}.
 }
