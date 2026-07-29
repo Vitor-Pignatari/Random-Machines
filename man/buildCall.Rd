@@ -10,8 +10,8 @@ buildCall(object, ...)
 \item{object}{A description of the argument.}
 }
 \value{
-What it returns.
+list of calls
 }
 \description{
-Description.
+Should operate differently based on "implementation" (kernlab/e1071)
 }

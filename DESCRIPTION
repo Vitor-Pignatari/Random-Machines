@@ -16,18 +16,9 @@ Collate:
     'datasplit-utils.R'
     'AllGenerics.R'
     'AllClasses.R'
-    'ArgSpecs-methods.R'
-    'BootModels-methods.R'
-    'BootSamples-methods.R'
-    'KernelProb-methods.R'
-    'KernlabClasses.R'
-    'OOBLoss-methods.R'
-    'RMPredictor-methods.R'
-    'fit-methods.R'
     'predict-methods.R'
     'random_machines.R'
     'svm-methods.R'
-    'utils.R'
     'validity-utils.R'
 RoxygenNote: 7.3.1
 Suggests: 
