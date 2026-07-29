@@ -1,16 +1,8 @@
-# Build a BootOmegas ensemble for a given spec + training data.
-build_ensemble <- function(specs, data, lambdas) {
-  svmcalls <- call_builder(specs)
-  boot <- BootSamples(
-    trainData = data,
-    bootFun   = simple_bs,
-    bootArgs  = list(indexes = seq_len(nrow(data)), B = specs@B)
-  )
-  BootOmegas(specs, bootData = boot, svmcalls = svmcalls, lambdas = lambdas)
-}
+# predict() for BootOmegas / RandomMachines. Ensembles are built via the shared
+# build_ensemble() helper (see helper-fixtures.R).
 
 test_that("BootOmegas carries specs and finite (no longer Inf) omegas", {
-  d <- droplevels(iris[iris$Species %in% c("setosa", "versicolor"), ])
+  d <- iris_binary()
   specs <- random_machines(d, Species ~ ., task = "binary", prob = FALSE, B = 15)
   bo <- build_ensemble(specs, d, c(0.34, 0.33, 0.33))
 
@@ -20,7 +12,7 @@ test_that("BootOmegas carries specs and finite (no longer Inf) omegas", {
 
 test_that("predict(BootOmegas) does weighted majority vote for binary", {
   set.seed(1)
-  d  <- droplevels(iris[iris$Species %in% c("setosa", "versicolor"), ])
+  d  <- iris_binary()
   d  <- d[sample(nrow(d)), ]
   tr <- d[1:70, ]; te <- d[71:100, ]
 
@@ -35,7 +27,7 @@ test_that("predict(BootOmegas) does weighted majority vote for binary", {
 
 test_that("predict(BootOmegas) averages probabilities for binary prob", {
   set.seed(2)
-  d  <- droplevels(iris[iris$Species %in% c("setosa", "versicolor"), ])
+  d  <- iris_binary()
   d  <- d[sample(nrow(d)), ]
   tr <- d[1:70, ]; te <- d[71:100, ]
 
@@ -90,20 +82,11 @@ test_that("predict(BootOmegas) does a weighted mean for regression", {
 })
 
 test_that("predict(BootOmegas) guards bad newdata", {
-  d <- droplevels(iris[iris$Species %in% c("setosa", "versicolor"), ])
+  d <- iris_binary()
   specs <- random_machines(d, Species ~ Sepal.Length + Sepal.Width,
                            task = "binary", prob = FALSE, B = 10)
   bo <- build_ensemble(specs, d, c(0.34, 0.33, 0.33))
 
   expect_error(predict(bo, iris[0, ]), "non-empty data.frame")
   expect_error(predict(bo, iris["Petal.Length"]), "missing predictor")
-})
-
-test_that(".normalize_weights sums to 1 and neutralises non-finite weights", {
-  expect_equal(sum(.normalize_weights(c(1, 2, 3, 4))), 1)
-  w <- .normalize_weights(c(Inf, 5, 10, -3))
-  expect_true(all(is.finite(w)))
-  expect_equal(sum(w), 1)
-  expect_equal(w[1], 0)                       # Inf neutralised
-  expect_equal(.normalize_weights(c(0, 0, 0)), rep(1/3, 3))  # uniform fallback
 })

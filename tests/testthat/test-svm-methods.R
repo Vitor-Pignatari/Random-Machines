@@ -1,12 +1,8 @@
-# Fit the first kernel of a spec on the full data, so we can exercise the
-# svmPredict() dispatch directly on a real kernlab model.
-fit_first <- function(specs, data) {
-  calls <- call_builder(specs)
-  eval(rlang::call_modify(calls[[1]], data = data, fit = FALSE))
-}
+# svmPredict() dispatch is exercised directly on a real kernlab model via the
+# shared fit_first() helper (see helper-fixtures.R).
 
 test_that("svmPredict: binary majority-vote returns a class factor", {
-  iris_bin <- droplevels(iris[iris$Species %in% c("setosa", "versicolor"), ])
+  iris_bin <- iris_binary()
   specs <- random_machines(iris_bin, Species ~ ., task = "binary", prob = FALSE)
 
   pred <- svmPredict(specs, fit_first(specs, iris_bin), iris_bin)
@@ -18,7 +14,7 @@ test_that("svmPredict: binary majority-vote returns a class factor", {
 })
 
 test_that("svmPredict: binary probabilistic returns an n x 2 probability matrix", {
-  iris_bin <- droplevels(iris[iris$Species %in% c("setosa", "versicolor"), ])
+  iris_bin <- iris_binary()
   specs <- random_machines(iris_bin, Species ~ ., task = "binary", prob = TRUE)
 
   pred <- svmPredict(specs, fit_first(specs, iris_bin), iris_bin)

@@ -8,7 +8,7 @@ setClassUnion("NumOrFactor", c("numeric", "factor"))
 #'
 #' @slot data data.frame. 
 #' @slot formula formula.
-#' @slot task character. 
+#' @slot task character.
 #' @slot prob logical. 
 #' @slot implementation character. 
 #' @slot kernels character. 
@@ -82,7 +82,7 @@ ArgSpecsBinary <- function() {
 #'
 #' @examples
 setClass(Class = "ArgSpecsReg", contains = "ArgSpecs")
-ArgSpecsClass <- function(){
+ArgSpecsReg <- function(){
   specs <- new("ArgSpecsReg")
   specs@task <- "regression"
   return(specs)
@@ -253,7 +253,7 @@ setValidity(Class = "ArgSpecs", function(object) {
     return("'omegaFunction' must return a vector with the same length as the input.")
   }
   
-  if (object@task == 'Regression') {
+  if (object@task == 'regression') {
     if (!isTRUE(all.equal(sum(res), 1))) {
       return("'omegaFunction' must return values whose sum is 1.")
     }

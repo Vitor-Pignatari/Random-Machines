@@ -1,6 +1,6 @@
 test_that("random_machines() builds the correct ArgSpecs subclass", {
 
-  df <- droplevels(iris[iris$Species %in% c("setosa", "versicolor"), ])
+  df <- iris_binary()
 
   specs <- random_machines(
     data    = df,
@@ -14,7 +14,7 @@ test_that("random_machines() builds the correct ArgSpecs subclass", {
 
 test_that("random_machines() enquotes `data` as a symbol", {
 
-  df <- droplevels(iris[iris$Species %in% c("setosa", "versicolor"), ])
+  df <- iris_binary()
 
   specs <- random_machines(df, formula = Species ~ ., task = "binary")
 

@@ -1,6 +1,6 @@
 test_that("KernelLambdas computes kernel selection probabilities", {
   set.seed(201)
-  d <- droplevels(iris[iris$Species %in% c("setosa", "versicolor"), ])
+  d <- iris_binary()
 
   specs    <- random_machines(d, Species ~ ., task = "binary", prob = FALSE, B = 10)
   svmcalls <- call_builder(specs)

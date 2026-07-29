@@ -4,33 +4,28 @@
 #' @export
 setGeneric("randomMachines", function(x, ...) standardGeneric("randomMachines"))
 
-#' Lambda calculation
-#'
+#' Lambdas calculation - setting the generic allows for building different functions as methods for the KernelLambdas class
+#' Ideally, a restricted number of methods would exist to operate on the class to calculate Lambdas
+#' 
 #' Kernel function sampling probability
 #'
 #' @param metrics numeric vector containing metrics for each kernel function
 setGeneric("lambdaCalc", function(metrics) standardGeneric("lambdaCalc"))
 
-#' Omega calculation
+#' Omega calculation - setting the generic allows for building different functions as methods for the BootOmega class
+#' Ideally, a restricted number of methods would exist to operate on the class to calculate omegas
 #'
 #' Final weights of models trained on replicates
 #'
 #' @param metrics numeric vector of size B
 setGeneric("omegaCalc", function(metrics) standardGeneric("omegaCalc"))
-#' Methods to display information
-#'
-#' Description.
-#'
-#' @param object A description of the argument.
-#' @return What it returns.
-setGeneric("displayInfo", function(object, ...) standardGeneric("displayInfo"))
 
 #' Method to build function calls
 #'
-#' Description.
+#' Should operate differently based on "implementation" (kernlab/e1071)
 #'
 #' @param object A description of the argument.
-#' @return What it returns.
+#' @return list of calls
 setGeneric("buildCall", function(object, ...) standardGeneric("buildCall"))
 
 #' Predict from a fitted kernel SVM according to task and probability mode

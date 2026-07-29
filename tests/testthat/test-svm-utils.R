@@ -3,7 +3,7 @@
 # full-pipeline test-RandomMachines.)
 
 test_that("svm_fit_any covers the KernelLambdas and BootOmegas branches", {
-  iris_bin <- droplevels(iris[iris$Species %in% c("setosa", "versicolor"), ])
+  iris_bin <- iris_binary()
 
   specs    <- random_machines(iris_bin, Species ~ ., task = "binary", B = 10)
   svmcalls <- call_builder(specs)

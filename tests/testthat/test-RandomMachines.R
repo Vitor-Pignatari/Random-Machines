@@ -3,7 +3,7 @@
 
 test_that("full pipeline: binary majority vote", {
   set.seed(101)
-  d  <- droplevels(iris[iris$Species %in% c("setosa", "versicolor"), ])
+  d  <- iris_binary()
   d  <- d[sample(nrow(d)), ]
   tr <- d[1:70, ]; te <- d[71:100, ]
 
@@ -31,7 +31,7 @@ test_that("full pipeline: binary majority vote", {
 
 test_that("full pipeline: binary probability average", {
   set.seed(102)
-  d  <- droplevels(iris[iris$Species %in% c("setosa", "versicolor"), ])
+  d  <- iris_binary()
   d  <- d[sample(nrow(d)), ]
   tr <- d[1:70, ]; te <- d[71:100, ]
 
