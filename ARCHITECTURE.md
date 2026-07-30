@@ -30,9 +30,10 @@ classDiagram
     +formula formula
     +character task
     +logical prob
+    +character implementation
     +character kernels
     +list args
-    +integer B
+    +numeric B
     +ANY lambdaMetric
     +function lambdaFunction
     +ANY omegaMetric
@@ -185,7 +186,7 @@ class name**, so models trained on different resamples combine correctly.
 
 | Class | Key slots | Role |
 |---|---|---|
-| `ArgSpecs` *(virtual)* | `data` (model frame), `formula`, `task`, `prob`, `kernels`, `args`, `B`, `lambda*/omega*` | The fitting specification; task subclass drives dispatch |
+| `ArgSpecs` *(virtual)* | `data` (model frame), `formula`, `task`, `prob`, `implementation`, `kernels`, `args`, `B`, `lambda*/omega*` | The fitting specification; task subclass drives dispatch |
 | `ArgSpecsClassif` *(virtual)* | — | Shared parent of binary + multiclass (one method set for both) |
 | `ArgSpecsBinary` / `ArgSpecsMultiClass` / `ArgSpecsReg` | — | Concrete task specs |
 | `KernelSamples` | `data` (CV split), `splitfun`, `splitargs` | Stage-1 cross-validation folds |

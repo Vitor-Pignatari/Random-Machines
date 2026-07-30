@@ -4,8 +4,14 @@ export(BootOmegas)
 export(BootSamples)
 export(KernelSamples)
 export(RandomMachines)
+<<<<<<< HEAD
 export(default_weight_binary)
 export(default_weight_regression)
+=======
+export(brier_normalize)
+export(brier_weighter)
+export(exp_normalize)
+>>>>>>> origin/10-Create-other-normalizing-functions
 export(inverse_normalize)
 export(kfold_cv)
 export(log_normalize)
