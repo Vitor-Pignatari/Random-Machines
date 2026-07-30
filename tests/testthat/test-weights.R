@@ -1,4 +1,4 @@
-# Weight/normalisation utilities in R/weight-utils.R.
+# Weight/normalisation utilities in R/weights.R.
 
 test_that(".normalize_weights sums to 1 and neutralises non-finite weights", {
   expect_equal(sum(.normalize_weights(c(1, 2, 3, 4))), 1)

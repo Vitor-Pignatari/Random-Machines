@@ -2,75 +2,35 @@
 % Please edit documentation in R/random_machines.R
 \name{random_machines}
 \alias{random_machines}
-\title{Fit a Random Machines model}
+\title{Fit a Random Machines ensemble}
 \usage{
-random_machines(
-  data = iris,
-  formula = Species ~ .,
-  task = c("binary", "multiclass", "regression"),
-  prob = FALSE,
-  implementation = "kernlab",
-  kernels = c("rbf", "laplace", "polydot"),
-  args = list(rbf = list(C = 1, epsilon = 0.1, kernel = kernlab::rbfdot(sigma = 1)),
-    laplace = list(C = 1, epsilon = 0.01, kernel = kernlab::laplacedot(sigma = 1)),
-    polydot = list(C = 1, epsilon = 0.01, kernel = kernlab::polydot(degree = 1, scale =
-    1))),
-  B = 100L,
-  lambdaMetric = NULL,
-  lambdaFunction = NULL,
-  omegaMetric = NULL,
-  omegaFunction = NULL
-)
+random_machines(..., K = 5, store.cv.models = FALSE)
 }
 \arguments{
-\item{data}{a data.frame supplied \emph{unquoted} (e.g. \code{iris}); captured as a symbol}
+\item{...}{specification arguments forwarded to the internal spec builder:
+\code{data}, \code{formula}, \code{task}, \code{prob}, \code{implementation}, \code{kernels}, \code{args}, \code{B},
+and the \code{lambdaMetric} / \code{lambdaFunction} / \code{omegaMetric} / \code{omegaFunction}
+overrides. See the source of \code{.build_specs()} for defaults.}
 
-\item{formula}{formula defining the model fit}
+\item{K}{number of cross-validation folds for the kernel-lambda stage.}
 
-\item{task}{task to be performed: 'binary', 'multiclass' or 'regression'}
-
-\item{prob}{TRUE for a probabilistic model; default: FALSE}
-
-\item{implementation}{backend; 'kernlab' is the only one available for now}
-
-\item{kernels}{character identifiers for the kernels listed under 'args'}
-
-\item{args}{list of arguments passed to kernlab's 'ksvm' per kernel}
-
-\item{B}{number of bootstrap models}
-
-\item{lambdaMetric}{metric used to compute per-kernel lambdas. \code{NULL}
-(default) selects \code{yardstick::accuracy_vec} for classification and
-\code{yardstick::rmse_vec} for regression.}
-
-\item{lambdaFunction}{function mapping kernel metrics to selection
-probabilities. \code{NULL} (default) selects \code{\link[=log_normalize]{log_normalize()}} for
-classification and \code{\link[=inverse_normalize]{inverse_normalize()}} for regression.}
-
-\item{omegaMetric}{metric used to compute per-model omegas. \code{NULL} (default)
-selects \code{yardstick::accuracy_vec} for classification and
-\code{yardstick::rmse_vec} for regression.}
-
-\item{omegaFunction}{function mapping bootstrap metrics to model weights.
-\code{NULL} (default) selects \code{\link[=default_weight_binary]{default_weight_binary()}} for classification and
-\code{\link[=default_weight_regression]{default_weight_regression()}} for regression.}
+\item{store.cv.models}{keep the per-fold CV models in the fitted object?
+\code{FALSE} (default) discards them (they are diagnostic only; prediction uses
+the bootstrap models), keeping the object small.}
 }
 \value{
-an object inheriting from \link[=ArgSpecs-class]{ArgSpecs}
-(\code{ArgSpecsBinary}, \code{ArgSpecsMultiClass} or \code{ArgSpecsReg}).
+a fitted \link[=RandomMachines-class]{RandomMachines} object.
 }
 \description{
-User-facing constructor for a Random Machines specification. The \code{data}
-argument is \emph{enquoted} (captured as an unevaluated symbol) rather than
-evaluated, so the underlying data frame is not copied into the object.
-Instead its name is stored in the \code{data} slot (of class \code{"name"}) and is
-re-evaluated on demand further down the S4 pipeline, e.g.
-\code{eval(specs@data)} in \code{\link[=call_builder]{call_builder()}} / \code{BootOmegas}.
+User-facing entry point (Decision B1): builds the model specification from
+\code{data} + \code{formula} and immediately fits the two-stage Random Machines
+ensemble, returning a fitted \link[=RandomMachines-class]{RandomMachines} object ready for
+\code{\link[=predict]{predict()}}. The spec/fit split is internal -- see the private \code{.build_specs()}
+if you need a spec without fitting.
 }
 \examples{
 \dontrun{
-specs <- random_machines(iris, formula = Species ~ ., task = "multiclass")
-specs@data          # the symbol `iris`, not the data itself
-eval(specs@data)    # recovers the data frame on demand
+rm   <- random_machines(iris, formula = Species ~ ., task = "multiclass")
+pred <- predict(rm, iris)
 }
 }

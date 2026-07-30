@@ -13,6 +13,9 @@ NULL
 #' @param object a `BootOmegas` ensemble
 #' @param newdata a data.frame of observations to predict; must contain the
 #'   predictor columns used at fit time
+#' @param specs the `ArgSpecs` the ensemble was fit from; drives task/prob
+#'   dispatch. `BootOmegas` no longer stores it (Decision K1), so it must be
+#'   supplied -- `predict(RandomMachines)` passes its own `@specs`.
 #' @param ... unused
 #'
 #' @return a numeric vector (regression), a class factor (majority vote), or a
@@ -23,13 +26,14 @@ NULL
 setMethod(
   "predict",
   signature(object = "BootOmegas"),
-  function(object, newdata, ...) {
+  function(object, newdata, specs, ...) {
 
     if (missing(newdata) || !is.data.frame(newdata) || nrow(newdata) == 0L) {
       stop("`newdata` must be a non-empty data.frame.", call. = FALSE)
     }
-
-    specs <- object@specs
+    if (missing(specs)) {
+      stop("`specs` must be supplied to predict() on a BootOmegas.", call. = FALSE)
+    }
 
     missing_cols <- setdiff(.predictor_names(specs), names(newdata))
     if (length(missing_cols)) {
@@ -64,6 +68,6 @@ setMethod(
   "predict",
   signature(object = "RandomMachines"),
   function(object, newdata, ...) {
-    predict(object@bootOmegas, newdata, ...)
+    predict(object@bootOmegas, newdata, specs = object@specs, ...)
   }
 )

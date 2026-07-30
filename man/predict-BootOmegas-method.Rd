@@ -4,13 +4,17 @@
 \alias{predict,BootOmegas-method}
 \title{Predict from a bootstrap ensemble on unseen data}
 \usage{
-\S4method{predict}{BootOmegas}(object, newdata, ...)
+\S4method{predict}{BootOmegas}(object, newdata, specs, ...)
 }
 \arguments{
 \item{object}{a \code{BootOmegas} ensemble}
 
 \item{newdata}{a data.frame of observations to predict; must contain the
 predictor columns used at fit time}
+
+\item{specs}{the \code{ArgSpecs} the ensemble was fit from; drives task/prob
+dispatch. \code{BootOmegas} no longer stores it (Decision K1), so it must be
+supplied -- \code{predict(RandomMachines)} passes its own \verb{@specs}.}
 
 \item{...}{unused}
 }

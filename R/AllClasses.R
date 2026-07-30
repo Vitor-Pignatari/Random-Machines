@@ -1,37 +1,37 @@
 #' @include AllGenerics.R
 NULL
 
-#' Virtual Class containing arguments passed to the main RM function
-setClassUnion("NumOrFactor", c("numeric", "factor"))
-
-#' Title
+#' Random Machines specification (virtual base class)
 #'
-#' @slot data data.frame. 
-#' @slot formula formula.
-#' @slot task character.
-#' @slot prob logical. 
-#' @slot implementation character. 
-#' @slot kernels character. 
-#' @slot args list. 
-#' @slot B numeric. 
-#' @slot lambdaMetric function. 
-#' @slot lambdaFunction function. 
-#' @slot omegaMetric function. 
-#' @slot omegaFunction function. 
+#' Virtual parent holding every argument the Random Machines pipeline fits from.
+#' Built by [random_machines()] (via the internal `.build_specs()`) and realised
+#' as one of the task subclasses `ArgSpecsBinary`, `ArgSpecsMultiClass` or
+#' `ArgSpecsReg`. Not instantiated directly.
 #'
-#' @returns placeholder
-#' 
-#' @include datasplit-utils.R weight-utils.R
-#' 
-#' @examples placeholder
-#' 
+#' @slot data resolved model frame (response + predictors)
+#' @slot formula model formula
+#' @slot task task string: "binary", "multiclass" or "regression"
+#' @slot prob logical; TRUE for a probabilistic model
+#' @slot implementation backend identifier (currently "kernlab")
+#' @slot kernels character vector of kernel identifiers
+#' @slot args per-kernel list of arguments passed to `kernlab::ksvm`
+#' @slot B integer number of bootstrap models
+#' @slot lambdaMetric metric object scoring kernels in the lambda stage
+#' @slot lambdaFunction function mapping kernel metrics to selection probabilities
+#' @slot omegaMetric metric object scoring models in the omega stage
+#' @slot omegaFunction function mapping model metrics to raw weights
+#'
+#' @include resample.R weights.R
+#'
 #' @export
 
 setClass(
   contains = 'VIRTUAL',
   Class = "ArgSpecs",
   slots = list(
-    data           = "name",
+    # The resolved model frame (Decision A2), stored once. Not a symbol: the
+    # object is self-contained and survives saveRDS/reload.
+    data           = "data.frame",
     formula        = "formula",
     task           = "character",
     prob           = "logical",
@@ -39,48 +39,59 @@ setClass(
     kernels        = "character",
     args           = "list",
     B              = "numeric",
-    lambdaMetric   = "function",
-    # Will require at least virtual class
+    # Metrics are yardstick metric objects (S3 class_metric / metric_set) which
+    # are callable but not S4-"function", so the slot is "ANY"; validity
+    # smoke-tests that they actually evaluate (Decision J2).
+    lambdaMetric   = "ANY",
     lambdaFunction = "function",
-    # This one also has constraints
-    omegaMetric    = "function",
-    # This one as well
+    omegaMetric    = "ANY",
     omegaFunction  = "function"
   )
 )
 
-#' Title
+#' Classification specification (virtual)
 #'
-#' @returns
+#' Virtual intermediate shared by [ArgSpecsBinary-class] and
+#' [ArgSpecsMultiClass-class] (subclasses of [ArgSpecs-class]). Binary and
+#' multiclass share prediction,
+#' aggregation and validity through this parent -- attached once, inherited by
+#' both (Decision C2). Not instantiated directly.
+#'
+#' @keywords internal
+setClass(Class = "ArgSpecsClassif", contains = c("ArgSpecs", "VIRTUAL"))
+
+#' Multiclass classification specification
+#'
+#' Concrete [ArgSpecs-class] subclass for multiclass tasks; built by
+#' [random_machines()] with `task = "multiclass"`.
+#'
 #' @export
-#'
-#' @examples
-setClass(Class = "ArgSpecsMultiClass", contains = "ArgSpecs")
+setClass(Class = "ArgSpecsMultiClass", contains = "ArgSpecsClassif")
 ArgSpecsMultiClass <- function() {
   specs <- new("ArgSpecsMultiClass")
   specs@task <- "multiclass"
   return(specs)
 }
 
-#' Title
+#' Binary classification specification
 #'
-#' @returns
+#' Concrete [ArgSpecs-class] subclass for binary tasks; built by
+#' [random_machines()] with `task = "binary"`.
+#'
 #' @export
-#'
-#' @examples
-setClass(Class = "ArgSpecsBinary", contains = "ArgSpecs")
+setClass(Class = "ArgSpecsBinary", contains = "ArgSpecsClassif")
 ArgSpecsBinary <- function() {
   specs <- new("ArgSpecsBinary")
   specs@task <- "binary"
   return(specs)
 }
 
-#' Title
+#' Regression specification
 #'
-#' @returns
+#' Concrete [ArgSpecs-class] subclass for regression tasks; built by
+#' [random_machines()] with `task = "regression"`.
+#'
 #' @export
-#'
-#' @examples
 setClass(Class = "ArgSpecsReg", contains = "ArgSpecs")
 ArgSpecsReg <- function(){
   specs <- new("ArgSpecsReg")
@@ -88,183 +99,53 @@ ArgSpecsReg <- function(){
   return(specs)
 }
 
+# Validity is split across the class lattice (Decision H): task-agnostic checks
+# live here on ArgSpecs; the task-specific ones (response class + the toy-input
+# metric smoke test) live on the subclasses ArgSpecsClassif / ArgSpecsReg, so we
+# dispatch on the class instead of branching on `object@task`. S4 runs the
+# validity of a class *and* all its superclasses, so every ArgSpecs subclass gets
+# both the shared checks below and its own. Helpers: see validity.R.
 setValidity(Class = "ArgSpecs", function(object) {
 
-  ## `data` holds the *name* of a data.frame (see random_machines()), not the
-  ## data itself. Resolve it on demand by evaluating the symbol in the
-  ## formula's environment -- i.e. where the user built the call.
-  df <- tryCatch(
-    eval(object@data, envir = environment(object@formula)),
-    error = function(e) NULL
-  )
-
-  if (is.null(df)) {
-    return(paste0(
-      "could not resolve 'data': the symbol '", deparse(object@data),
-      "' is not visible from the formula's environment"
-    ))
-  }
-
-  if (!is.data.frame(df)) {
-    return("'data' must refer to a data.frame")
-  }
-
-  if (nrow(df) < 5) {
+  ## `data` is the resolved model frame (Decision A2); the slot type guarantees
+  ## it is a data.frame, so we only sanity-check its size here.
+  if (nrow(object@data) < 5) {
     return("'data' must have more than 4 observations")
   }
 
-  tasks <- c(
-    'regression' = 'numeric',
-    'binary' = 'factor',
-    'multiclass' = 'factor'
-  )
-
-  if (!(object@task %in% names(tasks))) {
-    return(paste0("'task' must be one of : ", paste0(names(tasks), collapse = ", ")))
+  if (!(object@task %in% c('regression', 'binary', 'multiclass'))) {
+    return("'task' must be one of : regression, binary, multiclass")
   }
 
-  ## Derive the response (y) from formula + data instead of a stored slot.
-  mf <- tryCatch(
-    stats::model.frame(object@formula, data = df),
-    error = function(e) NULL
-  )
-
-  if (is.null(mf)) {
+  ## The response must be derivable from formula + data. Its *class* vs task
+  ## compatibility is checked per-subclass (ArgSpecsClassif / ArgSpecsReg).
+  if (is.null(.resolve_response(object))) {
     return("'formula' is not compatible with 'data'")
   }
 
-  y <- stats::model.response(mf)
+  ## Metrics are yardstick metric objects (or a compatible function); whether
+  ## each actually runs on the task's response type is smoke-tested in the
+  ## subclass validity (ArgSpecsClassif / ArgSpecsReg) via .apply_metric.
 
-  if (!methods::is(y, tasks[[object@task]])) {
-    return(paste0(
-      "Task '", object@task,
-      "' is not compatible with a response of class '", class(y)[1], "'"
-    ))
-  }
-
-  if (!all(c('truth', 'estimate') %in% names(formals(object@lambdaMetric)))) {
-    return("'lambdaMetric' must have the arguments 'truth' and 'estimate'")
-  }
-  
-  
-  if (object@task %in% c('binary', 'multiclass')) {
-    # lambda metrics - classification
-    res <- tryCatch(
-      expr = object@lambdaMetric(truth = as.factor(c(1, 2, 1, 2)), estimate = as.factor(c(1, 2, 2, 2))),
-      error = function(e) {
-        e
-      }
-    )
-  } else {
-    res <- tryCatch(
-      expr = object@lambdaMetric(truth = rnorm(4), estimate = rnorm(4)),
-      error = function(e) {
-        e
-      }
-    )
-  }
-  
-  if (inherits(res, "error")) {
-    return("error evaluating 'lambdaMetric'. Must be a valid function")
-  }
-  
-  if (!is.numeric(res)) {
-    return("'lambdaMetric' must return numeric values")
-  }
-  
-  if (is.na(res)) {
-    return("error evaluating 'lambdaMetric'. Must be a valid function")
-  }
-  
-  # lambda function
-  res <- tryCatch(
-    object@lambdaFunction(runif(50)),
-    error = function(e)
-      NULL
-  )
-  
-  if (is.null(res)) {
-    return("'lambdaFunction' could not be evaluated.")
-  }
-  
-  if (!is.numeric(res)) {
-    return("'lambdaFunction' must return a numeric vector.")
-  }
-  
-  if (length(res) != 50) {
-    return("'lambdaFunction' must return a vector with the same length as the input.")
-  }
-  
-  if (!isTRUE(all.equal(sum(res), 1))) {
+  ## lambdaFunction maps kernel metrics to selection *probabilities*: it must
+  ## return a numeric vector the length of its input that sums to 1 (it is used
+  ## directly as sampling weights). Deterministic probe -> reproducible objects.
+  probe <- seq_len(50) / 51
+  res <- tryCatch(object@lambdaFunction(probe), error = function(e) NULL)
+  if (is.null(res))      return("'lambdaFunction' could not be evaluated.")
+  if (!is.numeric(res))  return("'lambdaFunction' must return a numeric vector.")
+  if (length(res) != 50) return("'lambdaFunction' must return a vector with the same length as the input.")
+  if (!isTRUE(all.equal(sum(res), 1)))
     return("'lambdaFunction' must return values whose sum is 1.")
-  }
-  
-  # omega metric
-  if (!all(c('truth', 'estimate') %in% names(formals(object@omegaMetric)))) {
-    return("'omegaMetric' must have the arguments 'truth' and 'estimate'")
-  }
-  
-  if (object@task %in% c('binary', 'multiclass')) {
-    # lambda metrics - classification
-    res <- tryCatch(
-      expr = object@omegaMetric(truth = as.factor(c(1, 2, 1, 2)), estimate = as.factor(c(1, 2, 2, 2))),
-      error = function(e) {
-        e
-      }
-    )
-  } else {
-    res <- tryCatch(
-      expr = object@omegaMetric(truth = rnorm(4), estimate = rnorm(4)),
-      error = function(e) {
-        e
-      }
-    )
-  }
-  
-  if (inherits(res, "error")) {
-    return("error evaluating 'omegaMetric'. Must be a valid function")
-  }
-  
-  if (!is.numeric(res)) {
-    return("'omegaMetric' must return numeric values")
-  }
-  
-  if (is.na(res)) {
-    return("error evaluating 'omegaMetric'. Must be a valid function")
-  }
-  
-  # omega function
-  
-  res <- tryCatch(
-    object@omegaFunction(rnorm(50)),
-    error = function(e)
-      NULL
-  )
-  
-  if (is.null(res)) {
-    return("'omegaFunction' could not be evaluated.")
-  }
-  
-  if (!is.numeric(res)) {
-    return("'omegaFunction' must return a numeric vector.")
-  }
-  
-  if (length(res) != 50) {
-    return("'omegaFunction' must return a vector with the same length as the input.")
-  }
-  
-  if (object@task == 'regression') {
-    if (!isTRUE(all.equal(sum(res), 1))) {
-      return("'omegaFunction' must return values whose sum is 1.")
-    }
-  }
-  
-  # kernels
-  # Verificar Kernels válidos pelo kernlab
-  # if () {
-  #   errors <- c(errors, "'kernels' must be a valid kernlab function")
-  # }
-  
+
+  ## omegaFunction maps per-model metrics to *raw* weights, normalised later at
+  ## aggregation (.normalize_weights). No sum-to-1 constraint -- neither default
+  ## (default_weight_binary / default_weight_regression) sums to 1.
+  res <- tryCatch(object@omegaFunction(probe), error = function(e) NULL)
+  if (is.null(res))      return("'omegaFunction' could not be evaluated.")
+  if (!is.numeric(res))  return("'omegaFunction' must return a numeric vector.")
+  if (length(res) != 50) return("'omegaFunction' must return a vector with the same length as the input.")
+
   # B
   if (length(object@B) > 1) {
     return("'B' must have length 1")
@@ -272,7 +153,42 @@ setValidity(Class = "ArgSpecs", function(object) {
   if (!is.integer(object@B)) {
     return("'B' must be an integer")
   }
-  
+
+  TRUE
+})
+
+## Classification (binary + multiclass): response must be a factor and the
+## metrics must evaluate on factor (truth, estimate). Replaces the old
+## `object@task %in% c('binary','multiclass')` branches (Decision H).
+setValidity(Class = "ArgSpecsClassif", function(object) {
+  y <- .resolve_response(object)
+  if (is.null(y)) return(TRUE)  # data/formula issue already reported by ArgSpecs
+  if (!methods::is(y, "factor")) {
+    return(paste0("Task '", object@task,
+                  "' is not compatible with a response of class '", class(y)[1], "'"))
+  }
+  truth <- as.factor(c(1, 2, 1, 2)); estimate <- as.factor(c(1, 2, 2, 2))
+  chk <- .check_metric_eval(object@lambdaMetric, truth, estimate, "lambdaMetric")
+  if (!isTRUE(chk)) return(chk)
+  chk <- .check_metric_eval(object@omegaMetric, truth, estimate, "omegaMetric")
+  if (!isTRUE(chk)) return(chk)
+  TRUE
+})
+
+## Regression: response must be numeric and the metrics must evaluate on numeric
+## (truth, estimate).
+setValidity(Class = "ArgSpecsReg", function(object) {
+  y <- .resolve_response(object)
+  if (is.null(y)) return(TRUE)
+  if (!methods::is(y, "numeric")) {
+    return(paste0("Task '", object@task,
+                  "' is not compatible with a response of class '", class(y)[1], "'"))
+  }
+  truth <- c(1, 2, 3, 4); estimate <- c(1, 2, 2, 4)
+  chk <- .check_metric_eval(object@lambdaMetric, truth, estimate, "lambdaMetric")
+  if (!isTRUE(chk)) return(chk)
+  chk <- .check_metric_eval(object@omegaMetric, truth, estimate, "omegaMetric")
+  if (!isTRUE(chk)) return(chk)
   TRUE
 })
 
@@ -318,7 +234,8 @@ setValidity(Class = "KernelSamples", function(object) {
 #' @return a KernelSamples object
 #' @export
 #'
-#' @examples Placeholder
+#' @examples
+#' KernelSamples(kfold_cv, list(n = nrow(iris), K = 5, y = iris$Species))
 KernelSamples <- function(splitfun, splitargs) {
   
   newData <- do.call(splitfun, splitargs)
@@ -356,21 +273,20 @@ setValidity(Class = "KernelLambdas", function(object) {
 #' @param specs an ArgSpecs object (from [random_machines()])
 #' @param kernelSamples a KernelSamples object whose `data` is a `train`/`test`
 #'   split (see [kfold_cv()])
-#' @param svmcalls per-kernel ksvm calls from [call_builder()]
+#' @param svmcalls per-kernel ksvm calls from `.call_builder()`
+#' @param store.cv.models keep the per-fold CV models in the `kernelModels` slot?
+#'   `FALSE` (default) discards them once their metrics are computed -- they are
+#'   not used for prediction, only diagnostics -- keeping the fitted object small.
 #'
 #' @return a KernelLambdas object
-#' @include svm-utils.R
-KernelLambdas <- function(specs, kernelSamples, svmcalls) {
+#' @include fit.R
+KernelLambdas <- function(specs, kernelSamples, svmcalls, store.cv.models = FALSE) {
 
-  data <- eval(specs@data, envir = environment(specs@formula))
-
-  kfit <- svm_fit_any(
+  kfit <- svmFit(
+    samples         = kernelSamples,
     specs           = specs,
-    data            = data,
-    datasplit       = kernelSamples@data,
     svmcalls        = svmcalls,
-    metric_function = specs@lambdaMetric,
-    indexes         = NULL
+    metric_function = specs@lambdaMetric
   )
 
   means   <- vapply(kfit, function(k) mean(k$metrics), numeric(1))
@@ -378,19 +294,24 @@ KernelLambdas <- function(specs, kernelSamples, svmcalls) {
 
   new(
     'KernelLambdas',
-    kernelModels  = lapply(kfit, `[[`, "fit"),
+    # CV models are diagnostic only (prediction uses BootOmegas@bootModels); keep
+    # them out of the object unless the caller opts in (Decision G).
+    kernelModels  = if (isTRUE(store.cv.models)) lapply(kfit, `[[`, "fit") else list(),
     kernelMetrics = means,
     kernelLambdas = lambdas
   )
 }
 
-#' An S4 class representing a user profile
+#' Bootstrap resamples for the omega stage
+#'
+#' Stores the bootstrap resampling function, its arguments, and the resulting
+#' `train`/`test` index matrices (see [simple_bs()]) that the omega stage fits on.
 #'
 #' @slot bootFun Bootstrap function passed into object creation
 #' @slot bootArgs Arguments passed to bootstrap function
 #' @slot bootData Bootstrap data stored after samples are generated
 #'
-#' @include boot-utils.R
+#' @include bootstrap.R
 #'
 
 setClass(
@@ -458,17 +379,19 @@ setValidity(
 
 #' BootSamples helper constructor
 #'
-#' @title BootSamples
+#' Runs `bootFun` with `bootArgs` and wraps the result in a [BootSamples] object.
+#'
 #' @param trainData Training data to be passed into object construction
 #' @param bootFun Bootstrap function to be applied
 #' @param bootArgs Arguments to bootstrap function
 #'
-#' @return placeholder
-#' @include datasplit-utils.R
-#' 
+#' @return a BootSamples object
+#' @include resample.R
+#'
 #' @export
 #'
-#' @examples placeholder
+#' @examples
+#' BootSamples(iris, simple_bs, list(indexes = seq_len(nrow(iris)), B = 10))
 
 BootSamples <- function(trainData, bootFun = simple_bs, bootArgs) {
   bootData <- do.call(bootFun, args = bootArgs)
@@ -482,31 +405,44 @@ BootSamples <- function(trainData, bootFun = simple_bs, bootArgs) {
 
 #' Bootstrap models and their weights (omegas)
 #'
-#' @slot specs the ArgSpecs object the ensemble was built from; carried so the
-#'   object is self-contained for prediction dispatch (task + `prob`)
 #' @slot bootModels list of fitted bootstrap SVM models
 #' @slot bootMetrics numeric vector of per-model out-of-bag metrics
 #' @slot bootOmegas numeric vector of per-model weights (omegas)
 #'
+#' @details The `specs` object is *not* stored here (Decision K1): the parent
+#'   `RandomMachines` holds it once, and the predict path passes it in. That
+#'   avoids serialising `specs` (and, post-A2, the training frame it carries)
+#'   twice in every saved model.
 setClass(
   Class = "BootOmegas",
   slots = list(
-    specs = "ArgSpecs",
     bootModels = "list",
     bootMetrics  = "numeric",
     bootOmegas = "numeric"
   )
 )
 
-#' BootOmegas constructor function
+#' BootOmegas constructor (omega stage)
 #'
-#' @param specs placeholder
-#' @param lambdas placeholder
-#' @include boot-utils.R svm-utils.R
-#' @returns placeholder
+#' Draws B bootstrap replicates, fits a lambda-sampled kernel on each, and
+#' weights the models by their out-of-bag metric (omegas).
+#'
+#' @param specs an ArgSpecs object (from [random_machines()])
+#' @param bootData a [BootSamples] object carrying the bootstrap index matrices
+#' @param svmcalls per-kernel ksvm calls from `.call_builder()`
+#' @param lambdas kernel selection probabilities from the lambda stage
+#' @include bootstrap.R fit.R
+#' @returns a BootOmegas object
 #' @export
 #'
-#' @examples placeholder
+#' @examples
+#' \dontrun{
+#' specs <- randomMachines:::.build_specs(iris, Species ~ ., task = "multiclass")
+#' calls <- .call_builder(specs)
+#' boot  <- BootSamples(specs@data, simple_bs,
+#'                      list(indexes = seq_len(nrow(specs@data)), B = specs@B))
+#' BootOmegas(specs, boot, calls, lambdas = c(0.34, 0.33, 0.33))
+#' }
 BootOmegas <- function(
     specs,
     bootData,
@@ -514,8 +450,6 @@ BootOmegas <- function(
     lambdas
     ) {
   
-  data <- eval(specs@data, envir = environment(specs@formula))
-
   indexes <- sample(
     1:length(svmcalls),
     prob = lambdas,
@@ -523,21 +457,19 @@ BootOmegas <- function(
     size = specs@B
   )
 
-  bootmodels <- svm_fit_any(
-    specs = specs,
-    data = data,
-    svmcalls = svmcalls,
-    datasplit = bootData@bootData,
+  bootmodels <- svmFit(
+    samples         = bootData,
+    specs           = specs,
+    svmcalls        = svmcalls,
     metric_function = specs@omegaMetric,
-    indexes = indexes
+    indexes         = indexes
   )
 
-  omegas <- omega_calc(omegaFunction = specs@omegaFunction,
+  omegas <- .omega_calc(omegaFunction = specs@omegaFunction,
                        bootMetrics = bootmodels$metrics)
 
   new(
     "BootOmegas",
-    specs       = specs,
     bootModels  = bootmodels$fit,
     bootMetrics = bootmodels$metrics,
     bootOmegas  = omegas
@@ -547,17 +479,16 @@ BootOmegas <- function(
 
 #' Fitted RandomMachines ensemble
 #'
-#' @slot specs ArgSpecs. 
-#' @slot kernelSamples KernelSamples. 
-#' @slot kernelLambdas KernelLambdas. 
-#' @slot bootSamples BootSamples. 
-#' @slot bootOmegas BootOmegas. 
+#' The object returned by [random_machines()]: the spec plus every stage of the
+#' fitted two-stage pipeline. Score new data with [predict()].
 #'
-#' @returns
+#' @slot specs the [ArgSpecs-class] the ensemble was fit from
+#' @slot kernelSamples the [KernelSamples] CV split (stage 1)
+#' @slot kernelLambdas the [KernelLambdas] kernel probabilities (stage 1)
+#' @slot bootSamples the [BootSamples] bootstrap resamples (stage 2)
+#' @slot bootOmegas the [BootOmegas] fitted models and weights (stage 2)
+#'
 #' @export
-#'
-#' @examples
-
 setClass(
   Class = "RandomMachines",
   slots = list(
@@ -576,17 +507,26 @@ setClass(
 #' built by [random_machines()].
 #'
 #' @param specs an ArgSpecs object (from [random_machines()]).
+#' @param K number of cross-validation folds for the kernel-lambda stage.
+#' @param store.cv.models keep the per-fold CV models in
+#'   `kernelLambdas@kernelModels`? `FALSE` (default) discards them (they are
+#'   diagnostic only; prediction uses the bootstrap models), keeping the fitted
+#'   object small. Set `TRUE` to inspect the stage-1 models.
 #'
 #' @returns a RandomMachines object.
 #' @export
 #'
-#' @examples placeholder
-RandomMachines <- function(specs, K = 5) {
+#' @examples
+#' \dontrun{
+#' specs <- randomMachines:::.build_specs(iris, Species ~ ., task = "multiclass")
+#' RandomMachines(specs, K = 5)
+#' }
+RandomMachines <- function(specs, K = 5, store.cv.models = FALSE) {
 
   ## Per-kernel ksvm call templates and the resolved training data are the
   ## inputs every downstream stage shares.
-  svmcalls <- call_builder(specs)
-  data     <- eval(specs@data, envir = environment(specs@formula))
+  svmcalls <- .call_builder(specs)
+  data     <- specs@data
   response <- .response_name(svmcalls[[1]])
 
   ## --- Stage 1: kernel lambdas -----------------------------------------
@@ -601,9 +541,10 @@ RandomMachines <- function(specs, K = 5) {
   )
 
   kernelLambdas <- KernelLambdas(
-    specs         = specs,
-    kernelSamples = kernelSamples,
-    svmcalls      = svmcalls
+    specs           = specs,
+    kernelSamples   = kernelSamples,
+    svmcalls        = svmcalls,
+    store.cv.models = store.cv.models
   )
 
   ## --- Stage 2: bootstrap omegas ---------------------------------------

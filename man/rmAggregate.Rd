@@ -3,17 +3,14 @@
 \name{rmAggregate}
 \alias{rmAggregate}
 \alias{rmAggregate,ArgSpecsReg-method}
-\alias{rmAggregate,ArgSpecsBinary-method}
-\alias{rmAggregate,ArgSpecsMultiClass-method}
+\alias{rmAggregate,ArgSpecsClassif-method}
 \title{Aggregate per-model predictions into an ensemble prediction}
 \usage{
 rmAggregate(specs, predictions, weights, ...)
 
 \S4method{rmAggregate}{ArgSpecsReg}(specs, predictions, weights, ...)
 
-\S4method{rmAggregate}{ArgSpecsBinary}(specs, predictions, weights, ...)
-
-\S4method{rmAggregate}{ArgSpecsMultiClass}(specs, predictions, weights, ...)
+\S4method{rmAggregate}{ArgSpecsClassif}(specs, predictions, weights, ...)
 }
 \arguments{
 \item{specs}{an ArgSpecs object; drives dispatch via its subclass and \code{prob}}
@@ -40,10 +37,8 @@ weighted mean (regression), weighted majority vote (classification,
 \itemize{
 \item \code{rmAggregate(ArgSpecsReg)}: Regression: weighted mean of the numeric predictions.
 
-\item \code{rmAggregate(ArgSpecsBinary)}: Binary classification: weighted majority vote
-(\code{prob = FALSE}) or weighted probability average (\code{prob = TRUE}).
-
-\item \code{rmAggregate(ArgSpecsMultiClass)}: Multiclass classification: weighted majority vote
-(\code{prob = FALSE}) or weighted probability average (\code{prob = TRUE}).
+\item \code{rmAggregate(ArgSpecsClassif)}: Classification (binary and multiclass): weighted
+majority vote (\code{prob = FALSE}) or weighted probability average
+(\code{prob = TRUE}). Shared by both via the virtual \code{ArgSpecsClassif} parent.
 
 }}

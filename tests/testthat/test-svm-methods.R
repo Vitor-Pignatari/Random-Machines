@@ -3,7 +3,7 @@
 
 test_that("svmPredict: binary majority-vote returns a class factor", {
   iris_bin <- iris_binary()
-  specs <- random_machines(iris_bin, Species ~ ., task = "binary", prob = FALSE)
+  specs <- .build_specs(iris_bin, Species ~ ., task = "binary", prob = FALSE)
 
   pred <- svmPredict(specs, fit_first(specs, iris_bin), iris_bin)
 
@@ -15,7 +15,7 @@ test_that("svmPredict: binary majority-vote returns a class factor", {
 
 test_that("svmPredict: binary probabilistic returns an n x 2 probability matrix", {
   iris_bin <- iris_binary()
-  specs <- random_machines(iris_bin, Species ~ ., task = "binary", prob = TRUE)
+  specs <- .build_specs(iris_bin, Species ~ ., task = "binary", prob = TRUE)
 
   pred <- svmPredict(specs, fit_first(specs, iris_bin), iris_bin)
 
@@ -26,7 +26,7 @@ test_that("svmPredict: binary probabilistic returns an n x 2 probability matrix"
 })
 
 test_that("svmPredict: multiclass majority-vote returns a class factor", {
-  specs <- random_machines(iris, Species ~ ., task = "multiclass", prob = FALSE)
+  specs <- .build_specs(iris, Species ~ ., task = "multiclass", prob = FALSE)
 
   pred <- svmPredict(specs, fit_first(specs, iris), iris)
 
@@ -35,7 +35,7 @@ test_that("svmPredict: multiclass majority-vote returns a class factor", {
 })
 
 test_that("svmPredict: multiclass probabilistic returns an n x k probability matrix", {
-  specs <- random_machines(iris, Species ~ ., task = "multiclass", prob = TRUE)
+  specs <- .build_specs(iris, Species ~ ., task = "multiclass", prob = TRUE)
 
   pred <- svmPredict(specs, fit_first(specs, iris), iris)
 
@@ -46,10 +46,10 @@ test_that("svmPredict: multiclass probabilistic returns an n x k probability mat
 })
 
 test_that("svmPredict: regression returns a numeric vector", {
-  specs <- random_machines(
+  specs <- .build_specs(
     mtcars, mpg ~ ., task = "regression",
-    lambdaMetric = yardstick::rmse_vec,
-    omegaMetric  = yardstick::rmse_vec
+    lambdaMetric = yardstick::rmse,
+    omegaMetric  = yardstick::rmse
   )
 
   pred <- svmPredict(specs, fit_first(specs, mtcars), mtcars)

@@ -10,13 +10,13 @@ iris_binary <- function() {
 # Fit the first kernel of a spec on the full data, to exercise a real kernlab
 # model (used by the svmPredict dispatch tests).
 fit_first <- function(specs, data) {
-  calls <- call_builder(specs)
+  calls <- .call_builder(specs)
   eval(rlang::call_modify(calls[[1]], data = data, fit = FALSE))
 }
 
 # Build a BootOmegas ensemble for a given spec + training data.
 build_ensemble <- function(specs, data, lambdas) {
-  svmcalls <- call_builder(specs)
+  svmcalls <- .call_builder(specs)
   boot <- BootSamples(
     trainData = data,
     bootFun   = simple_bs,

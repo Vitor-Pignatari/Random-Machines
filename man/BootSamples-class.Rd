@@ -3,9 +3,10 @@
 \docType{class}
 \name{BootSamples-class}
 \alias{BootSamples-class}
-\title{An S4 class representing a user profile}
+\title{Bootstrap resamples for the omega stage}
 \description{
-An S4 class representing a user profile
+Stores the bootstrap resampling function, its arguments, and the resulting
+\code{train}/\code{test} index matrices (see \code{\link[=simple_bs]{simple_bs()}}) that the omega stage fits on.
 }
 \section{Slots}{
 

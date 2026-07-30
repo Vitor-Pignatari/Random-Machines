@@ -27,5 +27,5 @@ training data splits and validation setequal
 }}
 
 \examples{
-Placeholder
+KernelSamples(kfold_cv, list(n = nrow(iris), K = 5, y = iris$Species))
 }

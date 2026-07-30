@@ -10,16 +10,18 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 Config/roxygen2/version: 8.0.0
 Collate: 
-    'boot-utils.R'
-    'svm-utils.R'
-    'weight-utils.R'
-    'datasplit-utils.R'
+    'bootstrap.R'
+    'fit.R'
+    'weights.R'
+    'resample.R'
     'AllGenerics.R'
     'AllClasses.R'
+    'lambda-methods.R'
+    'omega-methods.R'
     'predict-methods.R'
     'random_machines.R'
     'svm-methods.R'
-    'validity-utils.R'
+    'validity.R'
 RoxygenNote: 7.3.1
 Suggests: 
     testthat (>= 3.0.0)

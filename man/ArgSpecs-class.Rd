@@ -3,42 +3,38 @@
 \docType{class}
 \name{ArgSpecs-class}
 \alias{ArgSpecs-class}
-\title{Title}
-\value{
-placeholder
-}
+\title{Random Machines specification (virtual base class)}
 \description{
-Title
+Virtual parent holding every argument the Random Machines pipeline fits from.
+Built by \code{\link[=random_machines]{random_machines()}} (via the internal \code{.build_specs()}) and realised
+as one of the task subclasses \code{ArgSpecsBinary}, \code{ArgSpecsMultiClass} or
+\code{ArgSpecsReg}. Not instantiated directly.
 }
 \section{Slots}{
 
 \describe{
-\item{\code{data}}{data.frame.}
+\item{\code{data}}{resolved model frame (response + predictors)}
 
-\item{\code{formula}}{formula.}
+\item{\code{formula}}{model formula}
 
-\item{\code{task}}{character.}
+\item{\code{task}}{task string: "binary", "multiclass" or "regression"}
 
-\item{\code{prob}}{logical.}
+\item{\code{prob}}{logical; TRUE for a probabilistic model}
 
-\item{\code{implementation}}{character.}
+\item{\code{implementation}}{backend identifier (currently "kernlab")}
 
-\item{\code{kernels}}{character.}
+\item{\code{kernels}}{character vector of kernel identifiers}
 
-\item{\code{args}}{list.}
+\item{\code{args}}{per-kernel list of arguments passed to \code{kernlab::ksvm}}
 
-\item{\code{B}}{numeric.}
+\item{\code{B}}{integer number of bootstrap models}
 
-\item{\code{lambdaMetric}}{function.}
+\item{\code{lambdaMetric}}{metric object scoring kernels in the lambda stage}
 
-\item{\code{lambdaFunction}}{function.}
+\item{\code{lambdaFunction}}{function mapping kernel metrics to selection probabilities}
 
-\item{\code{omegaMetric}}{function.}
+\item{\code{omegaMetric}}{metric object scoring models in the omega stage}
 
-\item{\code{omegaFunction}}{function.}
+\item{\code{omegaFunction}}{function mapping model metrics to raw weights}
 }}
 
-\examples{
-placeholder
-
-}

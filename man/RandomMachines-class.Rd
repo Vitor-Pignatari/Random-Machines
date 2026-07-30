@@ -5,19 +5,20 @@
 \alias{RandomMachines-class}
 \title{Fitted RandomMachines ensemble}
 \description{
-Fitted RandomMachines ensemble
+The object returned by \code{\link[=random_machines]{random_machines()}}: the spec plus every stage of the
+fitted two-stage pipeline. Score new data with \code{\link[=predict]{predict()}}.
 }
 \section{Slots}{
 
 \describe{
-\item{\code{specs}}{ArgSpecs.}
+\item{\code{specs}}{the \link[=ArgSpecs-class]{ArgSpecs} the ensemble was fit from}
 
-\item{\code{kernelSamples}}{KernelSamples.}
+\item{\code{kernelSamples}}{the \link{KernelSamples} CV split (stage 1)}
 
-\item{\code{kernelLambdas}}{KernelLambdas.}
+\item{\code{kernelLambdas}}{the \link{KernelLambdas} kernel probabilities (stage 1)}
 
-\item{\code{bootSamples}}{BootSamples.}
+\item{\code{bootSamples}}{the \link{BootSamples} bootstrap resamples (stage 2)}
 
-\item{\code{bootOmegas}}{BootOmegas.}
+\item{\code{bootOmegas}}{the \link{BootOmegas} fitted models and weights (stage 2)}
 }}
 

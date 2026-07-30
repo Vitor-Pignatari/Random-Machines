@@ -10,6 +10,10 @@ lambdaCalc(metrics)
 \arguments{
 \item{metrics}{numeric vector containing metrics for each kernel function}
 }
+\value{
+a numeric vector of kernel selection probabilities (summing to 1)
+}
 \description{
 Kernel function sampling probability
 }
+\keyword{internal}

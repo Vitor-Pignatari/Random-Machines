@@ -7,11 +7,14 @@
 buildCall(object, ...)
 }
 \arguments{
-\item{object}{A description of the argument.}
+\item{object}{an ArgSpecs object}
+
+\item{...}{reserved for future backends}
 }
 \value{
-list of calls
+a list of fitting calls
 }
 \description{
 Should operate differently based on "implementation" (kernlab/e1071)
 }
+\keyword{internal}

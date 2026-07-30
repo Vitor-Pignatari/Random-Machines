@@ -8,9 +8,10 @@
 #'
 #' @return List containing column-per-resample matrix for bootstrap samples and indicator matrix for OOB samples matrix
 #'
+#' @export
+#'
 #' @examples
-#' # data <- data.frame(a = c(1, 2, 3))
-#' # simple_bs(indexes = 1:nrow(data), B = 100)
+#' simple_bs(indexes = 1:10, B = 5)
 #'
 simple_bs <- function(indexes, B) {
   
@@ -32,16 +33,17 @@ simple_bs <- function(indexes, B) {
   return(list("train" = bsmatrix, "test" = oob))
 }
 
-#' reverse_bs
+#' Materialise bootstrap index matrices into data frames
 #'
-#' @param bs_result placeholder
-#' @param original_data placeholder
+#' Inverse of [simple_bs()]: expands its `train`/`test` index matrices into
+#' lists of the corresponding data-frame rows from `original_data`. Not yet used
+#' by the pipeline; kept for planned functionality.
 #'
-#' @returns placeholder
-#'
-#' @examples placeholder
-#' 
-reverse_bs <- function(bs_result, original_data){
+#' @param bs_result a `list(train, test)` from [simple_bs()]
+#' @param original_data the data.frame the indices refer to
+#' @return a `list(train, oob)` of per-resample data frames
+#' @noRd
+.reverse_bs <- function(bs_result, original_data){
   
   bsmatrix <- apply(bs_result[["train"]], MARGIN = 2, function(x) {
     original_data[x, ]

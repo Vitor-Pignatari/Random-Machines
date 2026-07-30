@@ -3,17 +3,14 @@
 \name{svmPredict}
 \alias{svmPredict}
 \alias{svmPredict,ArgSpecsReg-method}
-\alias{svmPredict,ArgSpecsBinary-method}
-\alias{svmPredict,ArgSpecsMultiClass-method}
+\alias{svmPredict,ArgSpecsClassif-method}
 \title{Predict from a fitted kernel SVM according to task and probability mode}
 \usage{
 svmPredict(specs, model, newdata, ...)
 
 \S4method{svmPredict}{ArgSpecsReg}(specs, model, newdata, ...)
 
-\S4method{svmPredict}{ArgSpecsBinary}(specs, model, newdata, ...)
-
-\S4method{svmPredict}{ArgSpecsMultiClass}(specs, model, newdata, ...)
+\S4method{svmPredict}{ArgSpecsClassif}(specs, model, newdata, ...)
 }
 \arguments{
 \item{specs}{an ArgSpecs object; drives dispatch via its subclass and \code{prob}}
@@ -41,12 +38,8 @@ predictions in the shape its downstream aggregation expects.
 \itemize{
 \item \code{svmPredict(ArgSpecsReg)}: Regression: numeric predictions.
 
-\item \code{svmPredict(ArgSpecsBinary)}: Binary classification. \code{prob = TRUE} returns the
-n x 2 class-probability matrix; \code{prob = FALSE} returns the predicted class
-factor (the majority-vote input).
-
-\item \code{svmPredict(ArgSpecsMultiClass)}: Multiclass classification. \code{prob = TRUE} returns the
-n x k class-probability matrix; \code{prob = FALSE} returns the predicted class
-factor (the majority-vote input).
+\item \code{svmPredict(ArgSpecsClassif)}: Classification (binary and multiclass). \code{prob = TRUE}
+returns the n x k class-probability matrix; \code{prob = FALSE} returns the
+predicted class factor (the majority-vote input).
 
 }}

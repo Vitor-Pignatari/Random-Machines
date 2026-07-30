@@ -1,12 +1,13 @@
 # predict() for BootOmegas / RandomMachines. Ensembles are built via the shared
-# build_ensemble() helper (see helper-fixtures.R).
+# build_ensemble() helper (see helper-fixtures.R). Per Decision K1, BootOmegas no
+# longer stores specs, so predict(BootOmegas, ...) takes `specs`.
 
-test_that("BootOmegas carries specs and finite (no longer Inf) omegas", {
+test_that("BootOmegas holds finite (no longer Inf) omegas", {
   d <- iris_binary()
-  specs <- random_machines(d, Species ~ ., task = "binary", prob = FALSE, B = 15)
+  specs <- .build_specs(d, Species ~ ., task = "binary", prob = FALSE, B = 15)
   bo <- build_ensemble(specs, d, c(0.34, 0.33, 0.33))
 
-  expect_s4_class(bo@specs, "ArgSpecsBinary")
+  expect_s4_class(bo, "BootOmegas")
   expect_true(all(is.finite(bo@bootOmegas)))
 })
 
@@ -16,10 +17,10 @@ test_that("predict(BootOmegas) does weighted majority vote for binary", {
   d  <- d[sample(nrow(d)), ]
   tr <- d[1:70, ]; te <- d[71:100, ]
 
-  specs <- random_machines(tr, Species ~ ., task = "binary", prob = FALSE, B = 15)
+  specs <- .build_specs(tr, Species ~ ., task = "binary", prob = FALSE, B = 15)
   bo <- build_ensemble(specs, tr, c(0.34, 0.33, 0.33))
 
-  pred <- predict(bo, te)
+  pred <- predict(bo, te, specs = specs)
   expect_s3_class(pred, "factor")
   expect_length(pred, nrow(te))
   expect_setequal(levels(pred), levels(tr$Species))
@@ -31,10 +32,10 @@ test_that("predict(BootOmegas) averages probabilities for binary prob", {
   d  <- d[sample(nrow(d)), ]
   tr <- d[1:70, ]; te <- d[71:100, ]
 
-  specs <- random_machines(tr, Species ~ ., task = "binary", prob = TRUE, B = 15)
+  specs <- .build_specs(tr, Species ~ ., task = "binary", prob = TRUE, B = 15)
   bo <- build_ensemble(specs, tr, c(0.34, 0.33, 0.33))
 
-  pred <- predict(bo, te)
+  pred <- predict(bo, te, specs = specs)
   expect_true(is.matrix(pred))
   expect_equal(dim(pred), c(nrow(te), 2))
   expect_setequal(colnames(pred), levels(tr$Species))
@@ -46,19 +47,15 @@ test_that("predict(BootOmegas) handles multiclass vote and probability average",
   d  <- iris[sample(nrow(iris)), ]
   tr <- d[1:110, ]; te <- d[111:150, ]
 
-  vote <- build_ensemble(
-    random_machines(tr, Species ~ ., task = "multiclass", prob = FALSE, B = 12),
-    tr, c(0.34, 0.33, 0.33)
-  )
-  pv <- predict(vote, te)
+  specs_vote <- .build_specs(tr, Species ~ ., task = "multiclass", prob = FALSE, B = 12)
+  vote <- build_ensemble(specs_vote, tr, c(0.34, 0.33, 0.33))
+  pv <- predict(vote, te, specs = specs_vote)
   expect_s3_class(pv, "factor")
   expect_length(pv, nrow(te))
 
-  prob <- build_ensemble(
-    random_machines(tr, Species ~ ., task = "multiclass", prob = TRUE, B = 12),
-    tr, c(0.34, 0.33, 0.33)
-  )
-  pp <- predict(prob, te)
+  specs_prob <- .build_specs(tr, Species ~ ., task = "multiclass", prob = TRUE, B = 12)
+  prob <- build_ensemble(specs_prob, tr, c(0.34, 0.33, 0.33))
+  pp <- predict(prob, te, specs = specs_prob)
   expect_true(is.matrix(pp))
   expect_equal(dim(pp), c(nrow(te), 3))
   expect_true(all(abs(rowSums(pp) - 1) < 1e-6))
@@ -69,24 +66,24 @@ test_that("predict(BootOmegas) does a weighted mean for regression", {
   d  <- mtcars[sample(nrow(mtcars)), ]
   tr <- d[1:24, ]; te <- d[25:32, ]
 
-  specs <- random_machines(
+  specs <- .build_specs(
     tr, mpg ~ ., task = "regression", B = 15,
-    lambdaMetric = yardstick::rmse_vec,
-    omegaMetric  = yardstick::rmse_vec
+    lambdaMetric = yardstick::rmse,
+    omegaMetric  = yardstick::rmse
   )
   bo <- build_ensemble(specs, tr, c(0.34, 0.33, 0.33))
 
-  pred <- predict(bo, te)
+  pred <- predict(bo, te, specs = specs)
   expect_type(pred, "double")
   expect_length(pred, nrow(te))
 })
 
 test_that("predict(BootOmegas) guards bad newdata", {
   d <- iris_binary()
-  specs <- random_machines(d, Species ~ Sepal.Length + Sepal.Width,
-                           task = "binary", prob = FALSE, B = 10)
+  specs <- .build_specs(d, Species ~ Sepal.Length + Sepal.Width,
+                        task = "binary", prob = FALSE, B = 10)
   bo <- build_ensemble(specs, d, c(0.34, 0.33, 0.33))
 
-  expect_error(predict(bo, iris[0, ]), "non-empty data.frame")
-  expect_error(predict(bo, iris["Petal.Length"]), "missing predictor")
+  expect_error(predict(bo, iris[0, ], specs = specs), "non-empty data.frame")
+  expect_error(predict(bo, iris["Petal.Length"], specs = specs), "missing predictor")
 })

@@ -7,12 +7,15 @@
 \description{
 Bootstrap models and their weights (omegas)
 }
+\details{
+The \code{specs} object is \emph{not} stored here (Decision K1): the parent
+\code{RandomMachines} holds it once, and the predict path passes it in. That
+avoids serialising \code{specs} (and, post-A2, the training frame it carries)
+twice in every saved model.
+}
 \section{Slots}{
 
 \describe{
-\item{\code{specs}}{the ArgSpecs object the ensemble was built from; carried so the
-object is self-contained for prediction dispatch (task + \code{prob})}
-
 \item{\code{bootModels}}{list of fitted bootstrap SVM models}
 
 \item{\code{bootMetrics}}{numeric vector of per-model out-of-bag metrics}

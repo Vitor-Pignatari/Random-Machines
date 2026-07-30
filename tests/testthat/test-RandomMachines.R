@@ -7,8 +7,8 @@ test_that("full pipeline: binary majority vote", {
   d  <- d[sample(nrow(d)), ]
   tr <- d[1:70, ]; te <- d[71:100, ]
 
-  specs <- random_machines(tr, Species ~ ., task = "binary", prob = FALSE, B = 15)
-  rm <- RandomMachines(specs, K = 5)
+  rm <- random_machines(tr, Species ~ ., task = "binary", prob = FALSE, B = 15, K = 5)
+  specs <- rm@specs
 
   # object is fully assembled
   expect_s4_class(rm, "RandomMachines")
@@ -35,8 +35,7 @@ test_that("full pipeline: binary probability average", {
   d  <- d[sample(nrow(d)), ]
   tr <- d[1:70, ]; te <- d[71:100, ]
 
-  specs <- random_machines(tr, Species ~ ., task = "binary", prob = TRUE, B = 15)
-  rm <- RandomMachines(specs, K = 5)
+  rm <- random_machines(tr, Species ~ ., task = "binary", prob = TRUE, B = 15, K = 5)
 
   pred <- predict(rm, te)
   expect_true(is.matrix(pred))
@@ -48,8 +47,7 @@ test_that("full pipeline: multiclass majority vote", {
   d  <- iris[sample(nrow(iris)), ]
   tr <- d[1:110, ]; te <- d[111:150, ]
 
-  specs <- random_machines(tr, Species ~ ., task = "multiclass", prob = FALSE, B = 12)
-  rm <- RandomMachines(specs, K = 5)
+  rm <- random_machines(tr, Species ~ ., task = "multiclass", prob = FALSE, B = 12, K = 5)
 
   pred <- predict(rm, te)
   expect_s3_class(pred, "factor")
@@ -63,8 +61,7 @@ test_that("full pipeline: multiclass probability average", {
   d  <- iris[sample(nrow(iris)), ]
   tr <- d[1:110, ]; te <- d[111:150, ]
 
-  specs <- random_machines(tr, Species ~ ., task = "multiclass", prob = TRUE, B = 12)
-  rm <- RandomMachines(specs, K = 5)
+  rm <- random_machines(tr, Species ~ ., task = "multiclass", prob = TRUE, B = 12, K = 5)
 
   pred <- predict(rm, te)
   expect_true(is.matrix(pred))
@@ -77,15 +74,14 @@ test_that("full pipeline: regression (task-aware defaults)", {
   tr <- d[1:24, ]; te <- d[25:32, ]
 
   # No metric/function args: regression defaults resolve automatically.
-  specs <- random_machines(tr, mpg ~ ., task = "regression", B = 15)
-  rm <- RandomMachines(specs, K = 4)
+  rm <- random_machines(tr, mpg ~ ., task = "regression", B = 15, K = 4)
 
   expect_s4_class(rm@specs, "ArgSpecsReg")
 
   # Task-aware defaults selected the error-oriented functions/metrics.
-  expect_identical(specs@lambdaFunction, inverse_normalize)
-  expect_identical(specs@omegaFunction,  default_weight_regression)
-  expect_identical(specs@lambdaMetric,   yardstick::rmse_vec)
+  expect_identical(rm@specs@lambdaFunction, inverse_normalize)
+  expect_identical(rm@specs@omegaFunction,  default_weight_regression)
+  expect_identical(rm@specs@lambdaMetric,   yardstick::rmse)
 
   # Lambdas are a probability vector, and discriminative (not forced uniform).
   lam <- rm@kernelLambdas@kernelLambdas

@@ -9,7 +9,10 @@
 #'
 #' @return a finite, positive numeric vector of raw (un-normalised) weights
 #'
-#' @examples placeholder
+#' @export
+#'
+#' @examples
+#' default_weight_binary(c(0.6, 0.8, 0.95))
 default_weight_binary <- function(x){
   eps <- 1e-8
   x <- pmin(pmax(x, eps), 1 - eps)  # clamp to (0, 1) so 1/(1-x)^2 stays finite
@@ -28,7 +31,10 @@ default_weight_binary <- function(x){
 #'
 #' @return a finite, positive numeric vector of raw (un-normalised) weights
 #'
-#' @examples placeholder
+#' @export
+#'
+#' @examples
+#' default_weight_regression(c(2.1, 0.5, 1.3))
 default_weight_regression <- function(x) {
   eps <- 1e-8
   x <- pmax(abs(x), eps)  # clamp away from 0 so 1/x^2 stays finite
@@ -50,7 +56,8 @@ default_weight_regression <- function(x) {
 #'
 #' @export
 #'
-#' @examples placeholder
+#' @examples
+#' inverse_normalize(c(2.1, 0.5, 1.3))
 inverse_normalize <- function(x) {
   eps <- 1e-8
   w <- 1 / pmax(abs(x), eps)
@@ -75,8 +82,7 @@ inverse_normalize <- function(x) {
 #' @param w numeric vector of raw weights (e.g. `BootOmegas@bootOmegas`)
 #'
 #' @return a numeric vector of the same length summing to 1
-#'
-#' @examples placeholder
+#' @noRd
 .normalize_weights <- function(w) {
   w[!is.finite(w) | w < 0] <- 0
   total <- sum(w)
@@ -87,14 +93,51 @@ inverse_normalize <- function(x) {
   }
 }
 
-#' log_normalize
+#' Direction of a metric: "maximize", "minimize", or NA
 #'
-#' @param x placeholder 
+#' Reads the `direction` attribute yardstick attaches to its metric objects
+#' (`accuracy` -> "maximize", `rmse` -> "minimize"). Inputs without one -- a bare
+#' `function(truth, estimate)` or a `_vec` metric -- return `NA`, so the caller
+#' can fall back to a task default.
 #'
-#' @returns placeholder
+#' @param metric a yardstick metric object / metric_set, or a function
+#' @return one of "maximize" / "minimize" / `NA_character_`
+#' @noRd
+.metric_direction <- function(metric) {
+  d <- attr(metric, "direction")
+  if (is.null(d)) NA_character_ else d
+}
+
+#' Should the weight transform treat lower-is-better (minimize)?
+#'
+#' The weight transform follows the metric's direction, not the task: a
+#' *minimize* metric (RMSE, error) maps lower values to higher weight; a
+#' *maximize* metric (accuracy) maps higher values to higher weight. When the
+#' metric carries no direction, fall back to `regression_default`.
+#'
+#' @param metric a yardstick metric object / metric_set, or a function
+#' @param regression_default fallback used when `metric` has no direction
+#' @return `TRUE` for minimize (inverse-error transforms), `FALSE` for maximize
+#' @noRd
+.uses_minimize <- function(metric, regression_default) {
+  d <- .metric_direction(metric)
+  if (is.na(d)) regression_default else identical(d, "minimize")
+}
+
+#' Normalise scores into selection probabilities (logit-based)
+#'
+#' Maps scores in `(0, 1)` (higher is better) to selection probabilities via a
+#' shifted logit, normalised to sum to 1. The maximize counterpart of
+#' [inverse_normalize()]; falls back to uniform weights when all scores are
+#' equal.
+#'
+#' @param x numeric vector of scores in \[0, 1\]
+#'
+#' @returns a numeric vector of the same length summing to 1
 #' @export
 #'
-#' @examples placeholder
+#' @examples
+#' log_normalize(c(0.6, 0.8, 0.95))
 log_normalize <- function(x) {
   eps <- 1e-8
   x <- pmin(pmax(x, eps), 1 - eps)  # Clamp x to (0,1)

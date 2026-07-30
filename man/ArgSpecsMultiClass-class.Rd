@@ -3,7 +3,8 @@
 \docType{class}
 \name{ArgSpecsMultiClass-class}
 \alias{ArgSpecsMultiClass-class}
-\title{Title}
+\title{Multiclass classification specification}
 \description{
-Title
+Concrete \link[=ArgSpecs-class]{ArgSpecs} subclass for multiclass tasks; built by
+\code{\link[=random_machines]{random_machines()}} with \code{task = "multiclass"}.
 }

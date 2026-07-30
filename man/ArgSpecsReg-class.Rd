@@ -3,7 +3,8 @@
 \docType{class}
 \name{ArgSpecsReg-class}
 \alias{ArgSpecsReg-class}
-\title{Title}
+\title{Regression specification}
 \description{
-Title
+Concrete \link[=ArgSpecs-class]{ArgSpecs} subclass for regression tasks; built by
+\code{\link[=random_machines]{random_machines()}} with \code{task = "regression"}.
 }

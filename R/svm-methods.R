@@ -1,10 +1,10 @@
 #' @include AllGenerics.R AllClasses.R
 NULL
 
-# svmPredict() methods -- one per task case. Binary and multiclass are kept as
-# separate methods (rather than a shared classification method) so their
-# probabilistic behaviour can diverge later without touching the other, e.g.
-# binary-specific event-level handling.
+# svmPredict() methods -- two cases: regression and classification. Binary and
+# multiclass share the same method via the virtual ArgSpecsClassif parent
+# (Decision C/C2); S4 dispatch gives both the method below. A binary-only
+# override can be added later by defining svmPredict on "ArgSpecsBinary".
 
 #' @describeIn svmPredict Regression: numeric predictions.
 #' @importFrom methods setMethod
@@ -16,27 +16,12 @@ setMethod(
   }
 )
 
-#' @describeIn svmPredict Binary classification. `prob = TRUE` returns the
-#'   n x 2 class-probability matrix; `prob = FALSE` returns the predicted class
-#'   factor (the majority-vote input).
+#' @describeIn svmPredict Classification (binary and multiclass). `prob = TRUE`
+#'   returns the n x k class-probability matrix; `prob = FALSE` returns the
+#'   predicted class factor (the majority-vote input).
 setMethod(
   "svmPredict",
-  signature(specs = "ArgSpecsBinary"),
-  function(specs, model, newdata, ...) {
-    if (isTRUE(specs@prob)) {
-      kernlab::predict(model, newdata, type = "probabilities")
-    } else {
-      kernlab::predict(model, newdata, type = "response")
-    }
-  }
-)
-
-#' @describeIn svmPredict Multiclass classification. `prob = TRUE` returns the
-#'   n x k class-probability matrix; `prob = FALSE` returns the predicted class
-#'   factor (the majority-vote input).
-setMethod(
-  "svmPredict",
-  signature(specs = "ArgSpecsMultiClass"),
+  signature(specs = "ArgSpecsClassif"),
   function(specs, model, newdata, ...) {
     if (isTRUE(specs@prob)) {
       kernlab::predict(model, newdata, type = "probabilities")
@@ -86,22 +71,57 @@ setMethod(
   }
 )
 
-#' @describeIn rmAggregate Binary classification: weighted majority vote
-#'   (`prob = FALSE`) or weighted probability average (`prob = TRUE`).
+#' @describeIn rmAggregate Classification (binary and multiclass): weighted
+#'   majority vote (`prob = FALSE`) or weighted probability average
+#'   (`prob = TRUE`). Shared by both via the virtual `ArgSpecsClassif` parent.
 setMethod(
   "rmAggregate",
-  signature(specs = "ArgSpecsBinary"),
+  signature(specs = "ArgSpecsClassif"),
   function(specs, predictions, weights, ...) {
     .aggregate_classif(specs, predictions, weights)
   }
 )
 
-#' @describeIn rmAggregate Multiclass classification: weighted majority vote
-#'   (`prob = FALSE`) or weighted probability average (`prob = TRUE`).
+
+# svmFit() methods -- fit SVMs over a resampling scheme, dispatched on the
+# resample object (Decision E). Per-fit logic is shared via .fit_one(); result
+# assembly via .assemble_fits() (both in fit.R). This replaces the old
+# `svm_fit_any` length-based mode switch.
+
+#' @describeIn svmFit Stage 1 (lambdas): every kernel across every CV fold.
 setMethod(
-  "rmAggregate",
-  signature(specs = "ArgSpecsMultiClass"),
-  function(specs, predictions, weights, ...) {
-    .aggregate_classif(specs, predictions, weights)
+  "svmFit",
+  signature(samples = "KernelSamples"),
+  function(samples, specs, svmcalls, metric_function, ...) {
+    data      <- specs@data
+    datasplit <- samples@data
+    folds     <- seq_len(ncol(datasplit[["train"]]))
+
+    allkernels <- lapply(seq_along(svmcalls), function(k) {
+      per <- lapply(folds, function(f) {
+        .fit_one(specs, svmcalls[[k]], data,
+                 datasplit[["train"]][, f], datasplit[["test"]][, f], metric_function)
+      })
+      .assemble_fits(per)
+    })
+    names(allkernels) <- names(svmcalls)
+    allkernels
+  }
+)
+
+#' @describeIn svmFit Stage 2 (omegas): one lambda-sampled kernel per bootstrap
+#'   replicate. `indexes` (length B) selects the kernel for each replicate.
+setMethod(
+  "svmFit",
+  signature(samples = "BootSamples"),
+  function(samples, specs, svmcalls, metric_function, indexes, ...) {
+    data      <- specs@data
+    datasplit <- samples@bootData
+
+    per <- lapply(seq_along(indexes), function(i) {
+      .fit_one(specs, svmcalls[[indexes[i]]], data,
+               datasplit[["train"]][, i], datasplit[["test"]][, i], metric_function)
+    })
+    .assemble_fits(per)
   }
 )

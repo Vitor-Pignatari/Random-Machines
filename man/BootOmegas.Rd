@@ -2,21 +2,32 @@
 % Please edit documentation in R/AllClasses.R
 \name{BootOmegas}
 \alias{BootOmegas}
-\title{BootOmegas constructor function}
+\title{BootOmegas constructor (omega stage)}
 \usage{
 BootOmegas(specs, bootData, svmcalls, lambdas)
 }
 \arguments{
-\item{specs}{placeholder}
+\item{specs}{an ArgSpecs object (from \code{\link[=random_machines]{random_machines()}})}
 
-\item{lambdas}{placeholder}
+\item{bootData}{a \link{BootSamples} object carrying the bootstrap index matrices}
+
+\item{svmcalls}{per-kernel ksvm calls from \code{.call_builder()}}
+
+\item{lambdas}{kernel selection probabilities from the lambda stage}
 }
 \value{
-placeholder
+a BootOmegas object
 }
 \description{
-BootOmegas constructor function
+Draws B bootstrap replicates, fits a lambda-sampled kernel on each, and
+weights the models by their out-of-bag metric (omegas).
 }
 \examples{
-placeholder
+\dontrun{
+specs <- randomMachines:::.build_specs(iris, Species ~ ., task = "multiclass")
+calls <- .call_builder(specs)
+boot  <- BootSamples(specs@data, simple_bs,
+                     list(indexes = seq_len(nrow(specs@data)), B = specs@B))
+BootOmegas(specs, boot, calls, lambdas = c(0.34, 0.33, 0.33))
+}
 }

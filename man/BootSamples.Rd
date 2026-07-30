@@ -2,7 +2,7 @@
 % Please edit documentation in R/AllClasses.R
 \name{BootSamples}
 \alias{BootSamples}
-\title{BootSamples}
+\title{BootSamples helper constructor}
 \usage{
 BootSamples(trainData, bootFun = simple_bs, bootArgs)
 }
@@ -14,11 +14,11 @@ BootSamples(trainData, bootFun = simple_bs, bootArgs)
 \item{bootArgs}{Arguments to bootstrap function}
 }
 \value{
-placeholder
+a BootSamples object
 }
 \description{
-BootSamples helper constructor
+Runs \code{bootFun} with \code{bootArgs} and wraps the result in a \link{BootSamples} object.
 }
 \examples{
-placeholder
+BootSamples(iris, simple_bs, list(indexes = seq_len(nrow(iris)), B = 10))
 }

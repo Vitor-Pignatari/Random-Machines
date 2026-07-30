@@ -1,15 +1,11 @@
-#' Display user information
-#'
-#' @param object An S4 object.
-#' @export
-setGeneric("randomMachines", function(x, ...) standardGeneric("randomMachines"))
-
 #' Lambdas calculation - setting the generic allows for building different functions as methods for the KernelLambdas class
 #' Ideally, a restricted number of methods would exist to operate on the class to calculate Lambdas
 #' 
 #' Kernel function sampling probability
 #'
 #' @param metrics numeric vector containing metrics for each kernel function
+#' @return a numeric vector of kernel selection probabilities (summing to 1)
+#' @keywords internal
 setGeneric("lambdaCalc", function(metrics) standardGeneric("lambdaCalc"))
 
 #' Omega calculation - setting the generic allows for building different functions as methods for the BootOmega class
@@ -18,14 +14,18 @@ setGeneric("lambdaCalc", function(metrics) standardGeneric("lambdaCalc"))
 #' Final weights of models trained on replicates
 #'
 #' @param metrics numeric vector of size B
+#' @return a numeric vector of per-model weights (omegas), length B
+#' @keywords internal
 setGeneric("omegaCalc", function(metrics) standardGeneric("omegaCalc"))
 
 #' Method to build function calls
 #'
 #' Should operate differently based on "implementation" (kernlab/e1071)
 #'
-#' @param object A description of the argument.
-#' @return list of calls
+#' @param object an ArgSpecs object
+#' @param ... reserved for future backends
+#' @return a list of fitting calls
+#' @keywords internal
 setGeneric("buildCall", function(object, ...) standardGeneric("buildCall"))
 
 #' Predict from a fitted kernel SVM according to task and probability mode
@@ -63,5 +63,26 @@ setGeneric("svmPredict", function(specs, model, newdata, ...) standardGeneric("s
 #' @return the aggregated prediction: a numeric vector (regression), a class
 #'   factor (majority vote), or a class-probability matrix (probability average)
 setGeneric("rmAggregate", function(specs, predictions, weights, ...) standardGeneric("rmAggregate"))
+
+#' Fit SVMs across a resampling scheme
+#'
+#' Internal generic dispatched on the *resample object* (Decision E), replacing
+#' the old length-based mode switch in `svm_fit_any`. A [KernelSamples] runs every
+#' kernel across every CV fold (stage 1, lambdas); a [BootSamples] fits one
+#' lambda-sampled kernel per bootstrap replicate (stage 2, omegas). Prediction is
+#' routed through [svmPredict()], so probabilistic models yield probability
+#' matrices and vote models yield class factors; the weighting metric is always
+#' computed on hard classes.
+#'
+#' @param samples a `KernelSamples` or `BootSamples` object (drives dispatch)
+#' @param specs an ArgSpecs object; drives per-case [svmPredict()] dispatch
+#' @param svmcalls list of ksvm calls from `.call_builder()`
+#' @param metric_function metric applied to (truth, hard prediction)
+#' @param ... extra arguments; the `BootSamples` method requires `indexes`, the
+#'   length-B vector of lambda-sampled kernel indices (one per replicate)
+#'
+#' @return per-kernel list of `list(fit, predict, metrics)` (`KernelSamples`), or
+#'   a single such list (`BootSamples`)
+setGeneric("svmFit", function(samples, specs, svmcalls, metric_function, ...) standardGeneric("svmFit"))
 
 

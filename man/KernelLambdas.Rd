@@ -4,7 +4,7 @@
 \alias{KernelLambdas}
 \title{KernelLambdas constructor}
 \usage{
-KernelLambdas(specs, kernelSamples, svmcalls)
+KernelLambdas(specs, kernelSamples, svmcalls, store.cv.models = FALSE)
 }
 \arguments{
 \item{specs}{an ArgSpecs object (from \code{\link[=random_machines]{random_machines()}})}
@@ -12,7 +12,11 @@ KernelLambdas(specs, kernelSamples, svmcalls)
 \item{kernelSamples}{a KernelSamples object whose \code{data} is a \code{train}/\code{test}
 split (see \code{\link[=kfold_cv]{kfold_cv()}})}
 
-\item{svmcalls}{per-kernel ksvm calls from \code{\link[=call_builder]{call_builder()}}}
+\item{svmcalls}{per-kernel ksvm calls from \code{.call_builder()}}
+
+\item{store.cv.models}{keep the per-fold CV models in the \code{kernelModels} slot?
+\code{FALSE} (default) discards them once their metrics are computed -- they are
+not used for prediction, only diagnostics -- keeping the fitted object small.}
 }
 \value{
 a KernelLambdas object

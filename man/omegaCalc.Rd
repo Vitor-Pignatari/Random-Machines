@@ -10,6 +10,10 @@ omegaCalc(metrics)
 \arguments{
 \item{metrics}{numeric vector of size B}
 }
+\value{
+a numeric vector of per-model weights (omegas), length B
+}
 \description{
 Final weights of models trained on replicates
 }
+\keyword{internal}

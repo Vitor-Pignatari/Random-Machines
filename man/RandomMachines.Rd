@@ -4,10 +4,17 @@
 \alias{RandomMachines}
 \title{RandomMachines ensemble constructor}
 \usage{
-RandomMachines(specs, K = 5)
+RandomMachines(specs, K = 5, store.cv.models = FALSE)
 }
 \arguments{
 \item{specs}{an ArgSpecs object (from \code{\link[=random_machines]{random_machines()}}).}
+
+\item{K}{number of cross-validation folds for the kernel-lambda stage.}
+
+\item{store.cv.models}{keep the per-fold CV models in
+\code{kernelLambdas@kernelModels}? \code{FALSE} (default) discards them (they are
+diagnostic only; prediction uses the bootstrap models), keeping the fitted
+object small. Set \code{TRUE} to inspect the stage-1 models.}
 }
 \value{
 a RandomMachines object.
@@ -17,5 +24,8 @@ Orchestrates the Random Machines pipeline from an \link[=ArgSpecs-class]{ArgSpec
 built by \code{\link[=random_machines]{random_machines()}}.
 }
 \examples{
-placeholder
+\dontrun{
+specs <- randomMachines:::.build_specs(iris, Species ~ ., task = "multiclass")
+RandomMachines(specs, K = 5)
+}
 }
