@@ -111,3 +111,66 @@ log_normalize <- function(x) {
     return(l / total)
   }
 }
+
+#' Brier normalizing
+#'
+#' @param x a metrics vector for assigning weights
+#'
+#' @return a vector of weights
+#' @export
+#'
+#' @examples Placeholder
+brier_normalize <- function(x) {
+  eps <- 1e-8
+  x <- pmin(pmax(x, eps), 1 - eps)  # Clamp x to (0,1)
+  l <- log((1 - x) / x)
+  l_min <- min(l)
+  if (l_min < 0) {
+    l <- l - l_min  # shift so minimum is 0
+  }
+  total <- sum(l)
+  # If all x are forced to eps or (1-eps), l might be all zeros; in this case assign uniform weights
+  if (total == 0) {
+    return(rep(1 / length(x), length(x)))
+  } else {
+    return(l / total)
+  }
+}
+
+#' Exponential normalizing
+#'
+#' @param x a metrics vector for assigning weights
+#' @param beta penalty hyperparameter
+#'
+#' @return a vector of weights
+#' @export
+#'
+#' @examples Placeholder
+exp_normalize <- function(x, beta) {
+
+  x_min <- min(x); x_max <- max(x)
+  # Force x to be in [0,1] interval
+  x <- (x - x_min)/(x_max - x_min)
+  
+  e <- exp(-beta*x)
+  total <- sum(e)
+
+  if (total == 0) {
+    return(rep(1 / length(x), length(x)))
+  } else {
+    return(e / total)
+  }
+  
+}
+
+#' Brier weighter
+#'
+#' @param x metrics vector for assigning weights
+#'
+#' @return vector of weights
+#' @export
+#'
+#' @examples Placeholder
+brier_weighter <- function(x) {
+  1/(x^2)
+}
