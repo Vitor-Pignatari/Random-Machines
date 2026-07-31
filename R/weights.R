@@ -81,7 +81,7 @@ default_weight_binary <- function(x){
   return(1/((1 - x)^2))
 }
 
-#' Brier scoring - default measure for probabilistic accuracies
+#' Brier scoring - default measure for probabilistic metrics Kernel
 #'
 #' @param x a metrics vector for assigning weights
 #'
