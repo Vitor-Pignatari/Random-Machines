@@ -1,0 +1,10 @@
+book_filename: "randomMachines-architecture"
+output_dir: "_book"
+delete_merged_file: true
+rmd_files:
+  - "index.Rmd"
+  - "01-class-model.Rmd"
+  - "02-fit-pipeline.Rmd"
+  - "03-prediction.Rmd"
+  - "04-slot-reference.Rmd"
+  - "05-testing.Rmd"

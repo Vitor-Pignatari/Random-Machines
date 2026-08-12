@@ -64,25 +64,6 @@
   all.vars(rhs)
 }
 
-#' Collapse a prediction to the hard-class / numeric input a metric expects
-#'
-#' Probabilistic predictions arrive as a class-probability matrix; the OOB
-#' weighting metric is class-based (as enforced by ArgSpecs validity), so we
-#' reduce the matrix to the arg-max class. Factor (vote) and numeric
-#' (regression) predictions pass through unchanged.
-#'
-#' @param pred output of [svmPredict()]
-#' @return a factor (classification) or numeric vector (regression)
-#' @noRd
-.metric_input <- function(pred) {
-  if (is.matrix(pred)) {
-    lv <- colnames(pred)
-    factor(lv[max.col(pred, ties.method = "first")], levels = lv)
-  } else {
-    pred
-  }
-}
-
 #' Fit one kernel SVM on a split, predict its held-out rows, and score it
 #'
 #' @param specs an ArgSpecs object (drives [svmPredict()] dispatch)
@@ -110,30 +91,26 @@
   newdata <- data[test_idx, ]
   pred    <- svmPredict(specs, model, newdata)
   truth   <- data[test_idx, .response_name(svmcall)]
-  metric  <- .apply_metric(metric_function, truth, .metric_input(pred))
+  metric  <- .apply_metric(metric_function, truth, pred)
   list(fit = model, predict = pred, metric = metric)
 }
 
 #' Apply a metric to (truth, estimate) and return a single numeric value
 #'
-#' Prefers yardstick's data-frame interface so any metric *object* -- a single
-#' metric (`accuracy`, `rmse`) or a `metric_set` -- works uniformly and its
-#' `direction` attribute is available for weight selection (Decision J2). For a
-#' `metric_set` the first metric's estimate is used. A bare
-#' `function(truth, estimate)` (e.g. a `_vec` metric) is still supported.
+#' A metric is any `function(truth, estimate)` returning a single finite numeric,
+#' where `estimate` matches the task's prediction shape: a numeric vector
+#' (regression), a class factor (hard classification) or an n x k class
+#' probability matrix (probabilistic classification). The built-in defaults live
+#' in metrics.R; a user may pass any function honouring that contract (validated
+#' by `.check_metric_eval()`).
 #'
-#' @param metric a yardstick metric object / metric_set, or a function
-#' @param truth,estimate equal-length vectors of the task's response type
+#' @param metric a metric function (built-in or user-supplied)
+#' @param truth the task's response (factor or numeric)
+#' @param estimate a vector (hard class / numeric) or a probability matrix
 #' @return a single numeric metric value
 #' @noRd
 .apply_metric <- function(metric, truth, estimate) {
-  if (inherits(metric, "metric") || inherits(metric, "metric_set")) {
-    df  <- data.frame(truth = truth, estimate = estimate)
-    out <- metric(df, truth = truth, estimate = estimate)
-    out$.estimate[1]
-  } else {
-    metric(truth = truth, estimate = estimate)
-  }
+  metric(truth, estimate)
 }
 
 #' Assemble a list of per-fit results into fit/predict/metrics columns
@@ -152,33 +129,6 @@
   )
 }
 
-#' Compute kernel selection probabilities (lambdas) from per-kernel metrics
-#'
-#' Averages each kernel's per-fold metrics and maps the means to selection
-#' probabilities via `lambdaFunction`.
-#'
-#' @param kernelMetrics per-kernel list of fit results (each with a `metrics`
-#'   element)
-#' @param lambdaFunction function mapping mean metrics to probabilities that
-#'   sum to 1
-#' @return a numeric vector of kernel selection probabilities
-#' @noRd
-.lambda_calc <- function(kernelMetrics, lambdaFunction){
-  means <- sapply(1:length(kernelMetrics), function(x){
-    avg <- mean(kernelMetrics[[x]][["metrics"]])
-  })
-  do.call(lambdaFunction, args = list(means))
-}
-
-#' Compute per-model weights (omegas) from bootstrap metrics
-#'
-#' Maps each bootstrap model's out-of-bag metric to a raw weight via
-#' `omegaFunction` (normalised later at aggregation).
-#'
-#' @param bootMetrics numeric vector of per-model out-of-bag metrics (length B)
-#' @param omegaFunction function mapping metrics to raw model weights
-#' @return a numeric vector of raw model weights (length B)
-#' @noRd
-.omega_calc <- function(bootMetrics, omegaFunction){
-  do.call(omegaFunction, args = list(bootMetrics))
-}
+# Lambda/omega computation moved to the lambdaCalc()/omegaCalc() generics
+# (R/lambda-methods.R, R/omega-methods.R), which apply the shared min-max /
+# simplex normalization pipeline around the spec's pure weight functions.

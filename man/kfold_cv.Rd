@@ -34,9 +34,9 @@ random (suitable for regression).
 train/test split, putting a proportion \code{p} of the rows in \code{train} and the
 rest in \code{test}. When \code{y} is supplied the split is stratified per class (each
 class contributes \code{p} of its rows to training); otherwise rows are sampled at
-random. The return shape is identical to the K-fold case — \code{train}/\code{test} are
-just one-column matrices — so callers (e.g. \code{\link[=KernelSamples]{KernelSamples()}}, \code{svm_fit_any})
-need no special handling. This subsumes the old \code{simpleHoldout()}.
+random. The return shape matches the K-fold case, with \code{train}/\code{test} as
+one-column matrices, so callers (e.g. \code{\link[=KernelSamples]{KernelSamples()}}) need no special
+handling.
 }
 
 \examples{

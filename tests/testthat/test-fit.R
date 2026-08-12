@@ -7,10 +7,7 @@ test_that("svmFit(KernelSamples) fits every kernel across every fold", {
   specs    <- .build_specs(iris_bin, Species ~ ., task = "binary", B = 10)
   svmcalls <- .call_builder(specs)
 
-  ksamples <- KernelSamples(
-    splitfun  = kfold_cv,
-    splitargs = list(n = nrow(iris_bin), K = 4, y = iris_bin$Species)
-  )
+  ksamples <- kernel_samples(iris_bin, K = 4, y = iris_bin$Species)
 
   perkernel <- svmFit(ksamples, specs, svmcalls, specs@lambdaMetric)
 

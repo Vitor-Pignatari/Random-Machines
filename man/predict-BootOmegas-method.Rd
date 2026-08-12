@@ -13,8 +13,8 @@
 predictor columns used at fit time}
 
 \item{specs}{the \code{ArgSpecs} the ensemble was fit from; drives task/prob
-dispatch. \code{BootOmegas} no longer stores it (Decision K1), so it must be
-supplied -- \code{predict(RandomMachines)} passes its own \verb{@specs}.}
+dispatch. \code{BootOmegas} does not store it, so it must be supplied;
+\code{predict(RandomMachines)} passes its own \verb{@specs}.}
 
 \item{...}{unused}
 }

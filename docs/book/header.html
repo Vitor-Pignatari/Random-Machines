@@ -1,0 +1,9 @@
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+  // Diagrams are emitted as <pre class="mermaid"> with HTML-escaped source;
+  // the browser decodes the entities into the element's textContent, which
+  // mermaid then parses. startOnLoad renders every such block on page load.
+  if (window.mermaid) {
+    mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });
+  }
+</script>

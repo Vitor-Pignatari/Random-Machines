@@ -5,10 +5,10 @@
 \alias{ArgSpecs-class}
 \title{Random Machines specification (virtual base class)}
 \description{
-Virtual parent holding every argument the Random Machines pipeline fits from.
-Built by \code{\link[=random_machines]{random_machines()}} (via the internal \code{.build_specs()}) and realised
-as one of the task subclasses \code{ArgSpecsBinary}, \code{ArgSpecsMultiClass} or
-\code{ArgSpecsReg}. Not instantiated directly.
+Virtual parent holding every argument the pipeline fits from. Built by
+\code{\link[=random_machines]{random_machines()}} (via the internal \code{.build_specs()}) as one of the concrete
+task subclasses: \code{ArgSpecsBinary}, \code{ArgSpecsMultiClass}, \code{ArgSpecsBinaryProb},
+\code{ArgSpecsMultiClassProb} or \code{ArgSpecsReg}. Not instantiated directly.
 }
 \section{Slots}{
 
@@ -29,12 +29,21 @@ as one of the task subclasses \code{ArgSpecsBinary}, \code{ArgSpecsMultiClass} o
 
 \item{\code{B}}{integer number of bootstrap models}
 
-\item{\code{lambdaMetric}}{metric object scoring kernels in the lambda stage}
+\item{\code{lambdaMetric}}{metric \verb{function(truth, estimate)} scoring kernels in the
+lambda stage}
 
-\item{\code{lambdaFunction}}{function mapping kernel metrics to selection probabilities}
+\item{\code{lambdaFunction}}{pure transform mapping (min-max scaled) kernel metrics to
+raw lambda weights; the pipeline projects the result onto the simplex}
 
-\item{\code{omegaMetric}}{metric object scoring models in the omega stage}
+\item{\code{lambdaArgs}}{list of pre-bound arguments for \code{lambdaFunction} (e.g.
+\code{list(beta = 0.5)})}
 
-\item{\code{omegaFunction}}{function mapping model metrics to raw weights}
+\item{\code{omegaMetric}}{metric \verb{function(truth, estimate)} scoring models in the
+omega stage}
+
+\item{\code{omegaFunction}}{pure transform mapping (min-max scaled) model metrics to
+raw omega weights; the pipeline min-max scales the result}
+
+\item{\code{omegaArgs}}{list of pre-bound arguments for \code{omegaFunction}}
 }}
 

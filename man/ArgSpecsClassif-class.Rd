@@ -5,10 +5,11 @@
 \alias{ArgSpecsClassif-class}
 \title{Classification specification (virtual)}
 \description{
-Virtual intermediate shared by \link[=ArgSpecsBinary-class]{ArgSpecsBinary} and
-\link[=ArgSpecsMultiClass-class]{ArgSpecsMultiClass} (subclasses of \link[=ArgSpecs-class]{ArgSpecs}). Binary and
-multiclass share prediction,
-aggregation and validity through this parent -- attached once, inherited by
-both (Decision C2). Not instantiated directly.
+Virtual intermediate shared by every classification spec (hard and
+probabilistic). Carries the check common to all of them: the response must be
+a factor. Prediction, aggregation and the metric check are attached one level
+down, on \link[=ArgSpecsClassifHard-class]{ArgSpecsClassifHard} and \link[=ArgSpecsClassifProb-class]{ArgSpecsClassifProb}, so
+hard-vote and probability cases dispatch without a \code{prob} branch. Not
+instantiated directly.
 }
 \keyword{internal}

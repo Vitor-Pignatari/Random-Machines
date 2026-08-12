@@ -8,10 +8,9 @@
 Bootstrap models and their weights (omegas)
 }
 \details{
-The \code{specs} object is \emph{not} stored here (Decision K1): the parent
-\code{RandomMachines} holds it once, and the predict path passes it in. That
-avoids serialising \code{specs} (and, post-A2, the training frame it carries)
-twice in every saved model.
+The \code{specs} object is not stored here. The parent \code{RandomMachines}
+holds it once and the predict path passes it in, so a saved model does not
+serialise \code{specs} (and the training frame it carries) twice.
 }
 \section{Slots}{
 

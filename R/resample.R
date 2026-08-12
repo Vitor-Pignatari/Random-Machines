@@ -12,9 +12,9 @@
 #' train/test split, putting a proportion `p` of the rows in `train` and the
 #' rest in `test`. When `y` is supplied the split is stratified per class (each
 #' class contributes `p` of its rows to training); otherwise rows are sampled at
-#' random. The return shape is identical to the K-fold case — `train`/`test` are
-#' just one-column matrices — so callers (e.g. [KernelSamples()], `svm_fit_any`)
-#' need no special handling. This subsumes the old `simpleHoldout()`.
+#' random. The return shape matches the K-fold case, with `train`/`test` as
+#' one-column matrices, so callers (e.g. [KernelSamples()]) need no special
+#' handling.
 #'
 #' @param n number of observations
 #' @param K number of folds; `K = 1` selects holdout mode (see section above)

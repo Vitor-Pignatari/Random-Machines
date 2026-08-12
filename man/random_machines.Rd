@@ -9,8 +9,9 @@ random_machines(..., K = 5, store.cv.models = FALSE)
 \arguments{
 \item{...}{specification arguments forwarded to the internal spec builder:
 \code{data}, \code{formula}, \code{task}, \code{prob}, \code{implementation}, \code{kernels}, \code{args}, \code{B},
-and the \code{lambdaMetric} / \code{lambdaFunction} / \code{omegaMetric} / \code{omegaFunction}
-overrides. See the source of \code{.build_specs()} for defaults.}
+and the \code{lambdaMetric} / \code{lambdaFunction} / \code{lambdaArgs} / \code{omegaMetric} /
+\code{omegaFunction} / \code{omegaArgs} overrides. See the source of \code{.build_specs()}
+for defaults.}
 
 \item{K}{number of cross-validation folds for the kernel-lambda stage.}
 
@@ -22,11 +23,11 @@ the bootstrap models), keeping the object small.}
 a fitted \link[=RandomMachines-class]{RandomMachines} object.
 }
 \description{
-User-facing entry point (Decision B1): builds the model specification from
-\code{data} + \code{formula} and immediately fits the two-stage Random Machines
-ensemble, returning a fitted \link[=RandomMachines-class]{RandomMachines} object ready for
-\code{\link[=predict]{predict()}}. The spec/fit split is internal -- see the private \code{.build_specs()}
-if you need a spec without fitting.
+The package entry point. Builds a model specification from \code{data} and
+\code{formula}, then fits the two-stage ensemble (kernel lambdas, then bootstrap
+omegas) and returns a fitted \link[=RandomMachines-class]{RandomMachines} object to score with
+\code{\link[=predict]{predict()}}. The internal \code{.build_specs()} produces a specification without
+fitting.
 }
 \examples{
 \dontrun{

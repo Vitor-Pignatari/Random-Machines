@@ -5,10 +5,7 @@ test_that("KernelLambdas computes kernel selection probabilities", {
   specs    <- .build_specs(d, Species ~ ., task = "binary", prob = FALSE, B = 10)
   svmcalls <- .call_builder(specs)
 
-  ks <- KernelSamples(
-    splitfun  = kfold_cv,
-    splitargs = list(n = nrow(d), K = 5, y = d$Species)
-  )
+  ks <- kernel_samples(d, K = 5, y = d$Species)
 
   kl <- KernelLambdas(specs, kernelSamples = ks, svmcalls = svmcalls)
 
@@ -26,10 +23,7 @@ test_that("KernelLambdas keeps CV models when store.cv.models = TRUE", {
 
   specs    <- .build_specs(d, Species ~ ., task = "binary", prob = FALSE, B = 10)
   svmcalls <- .call_builder(specs)
-  ks <- KernelSamples(
-    splitfun  = kfold_cv,
-    splitargs = list(n = nrow(d), K = 5, y = d$Species)
-  )
+  ks <- kernel_samples(d, K = 5, y = d$Species)
 
   kl <- KernelLambdas(specs, kernelSamples = ks, svmcalls = svmcalls,
                       store.cv.models = TRUE)

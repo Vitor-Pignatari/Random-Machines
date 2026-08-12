@@ -1,5 +1,26 @@
 # randomMachines
 
+`randomMachines` fits a weighted ensemble of kernel support vector machines. It
+combines several kernels rather than committing to one, in two stages:
+
+1. **Kernel lambdas.** Cross-validate every candidate kernel and map its mean
+   out-of-fold performance to a selection probability (λ).
+2. **Bootstrap omegas.** Draw `B` bootstrap replicates, fit one λ-sampled kernel
+   per replicate, and weight the fitted models by their out-of-bag performance (ω).
+
+Prediction scores new data with every bootstrap model and combines the results by
+their ω, giving a weighted majority vote, an averaged class-probability matrix, or
+a weighted mean for binary, multiclass, probabilistic and regression tasks.
+
+```r
+rm   <- random_machines(iris, formula = Species ~ ., task = "multiclass")
+pred <- predict(rm, iris)
+```
+
+The single entry point `random_machines()` builds a specification and fits the
+ensemble, returning a self-contained `RandomMachines` object. See `ARCHITECTURE.md`
+for the class model and the fit and prediction pipelines.
+
 ## References
 
 ### Package development

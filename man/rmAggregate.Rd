@@ -3,14 +3,17 @@
 \name{rmAggregate}
 \alias{rmAggregate}
 \alias{rmAggregate,ArgSpecsReg-method}
-\alias{rmAggregate,ArgSpecsClassif-method}
+\alias{rmAggregate,ArgSpecsClassifHard-method}
+\alias{rmAggregate,ArgSpecsClassifProb-method}
 \title{Aggregate per-model predictions into an ensemble prediction}
 \usage{
 rmAggregate(specs, predictions, weights, ...)
 
 \S4method{rmAggregate}{ArgSpecsReg}(specs, predictions, weights, ...)
 
-\S4method{rmAggregate}{ArgSpecsClassif}(specs, predictions, weights, ...)
+\S4method{rmAggregate}{ArgSpecsClassifHard}(specs, predictions, weights, ...)
+
+\S4method{rmAggregate}{ArgSpecsClassifProb}(specs, predictions, weights, ...)
 }
 \arguments{
 \item{specs}{an ArgSpecs object; drives dispatch via its subclass and \code{prob}}
@@ -37,8 +40,10 @@ weighted mean (regression), weighted majority vote (classification,
 \itemize{
 \item \code{rmAggregate(ArgSpecsReg)}: Regression: weighted mean of the numeric predictions.
 
-\item \code{rmAggregate(ArgSpecsClassif)}: Classification (binary and multiclass): weighted
-majority vote (\code{prob = FALSE}) or weighted probability average
-(\code{prob = TRUE}). Shared by both via the virtual \code{ArgSpecsClassif} parent.
+\item \code{rmAggregate(ArgSpecsClassifHard)}: Hard classification: weighted majority vote over the
+per-model class factors.
+
+\item \code{rmAggregate(ArgSpecsClassifProb)}: Probabilistic classification: weighted average of the
+per-model class-probability matrices.
 
 }}

@@ -3,9 +3,10 @@
 \docType{class}
 \name{KernelLambdas-class}
 \alias{KernelLambdas-class}
-\title{Internal S4 class for RM 1st stage representation}
+\title{Kernel selection probabilities (stage 1)}
 \description{
-Internal S4 class for RM 1st stage representation
+Result of the kernel-lambda stage: each kernel's mean out-of-fold metric and
+the selection probability (lambda) it maps to.
 }
 \section{Slots}{
 

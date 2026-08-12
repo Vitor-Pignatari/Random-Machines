@@ -1,0 +1,114 @@
+# Class model {#class-model}
+
+```{r class-diagram, results='asis'}
+cat(mermaid('classDiagram
+  direction TB
+
+  class ArgSpecs {
+    <<virtual>>
+    +data.frame data
+    +formula formula
+    +character task
+    +logical prob
+    +character implementation
+    +character kernels
+    +list args
+    +numeric B
+    +ANY lambdaMetric
+    +function lambdaFunction
+    +list lambdaArgs
+    +ANY omegaMetric
+    +function omegaFunction
+    +list omegaArgs
+    +lambdaCalc()
+    +omegaCalc()
+  }
+  class ArgSpecsClassif {
+    <<virtual>>
+  }
+  class ArgSpecsClassifHard {
+    <<virtual>>
+    +svmPredict()
+    +rmAggregate()
+  }
+  class ArgSpecsClassifProb {
+    <<virtual>>
+    +svmPredict()
+    +rmAggregate()
+  }
+  class ArgSpecsBinary
+  class ArgSpecsMultiClass
+  class ArgSpecsBinaryProb
+  class ArgSpecsMultiClassProb
+  class ArgSpecsReg {
+    +svmPredict()
+    +rmAggregate()
+  }
+
+  ArgSpecs <|-- ArgSpecsClassif
+  ArgSpecs <|-- ArgSpecsReg
+  ArgSpecsClassif <|-- ArgSpecsClassifHard
+  ArgSpecsClassif <|-- ArgSpecsClassifProb
+  ArgSpecsClassifHard <|-- ArgSpecsBinary
+  ArgSpecsClassifHard <|-- ArgSpecsMultiClass
+  ArgSpecsClassifProb <|-- ArgSpecsBinaryProb
+  ArgSpecsClassifProb <|-- ArgSpecsMultiClassProb
+
+  class KernelSamples {
+    +list data
+    +function splitfun
+    +list splitargs
+    +svmFit()
+  }
+  class KernelLambdas {
+    +list kernelModels
+    +numeric kernelMetrics
+    +numeric kernelLambdas
+  }
+  class BootSamples {
+    +function bootFun
+    +list bootArgs
+    +list bootData
+    +svmFit()
+  }
+  class BootOmegas {
+    +list bootModels
+    +numeric bootMetrics
+    +numeric bootOmegas
+    +predict()
+  }
+
+  class RandomMachines {
+    +ArgSpecs specs
+    +KernelSamples kernelSamples
+    +KernelLambdas kernelLambdas
+    +BootSamples bootSamples
+    +BootOmegas bootOmegas
+    +predict()
+  }
+
+  RandomMachines *-- ArgSpecs : specs
+  RandomMachines *-- KernelSamples : stage 1 split
+  RandomMachines *-- KernelLambdas : stage 1 result
+  RandomMachines *-- BootSamples : stage 2 split
+  RandomMachines *-- BootOmegas : stage 2 result'))
+```
+
+**How to read it**
+
+- `<|--` is **inheritance**, `*--` is **composition** (a `RandomMachines` *owns* one
+  of each stage object).
+- **`prob` is a type, not a runtime flag.** Classification splits into two virtual
+  branches, `ArgSpecsClassifHard` (predictions are class factors) and
+  `ArgSpecsClassifProb` (predictions are class-probability matrices), each with
+  concrete binary/multiclass leaves. So `svmPredict()` / `rmAggregate()` dispatch to
+  the right shape with **no `if (prob)` branch**. `ArgSpecsReg` is the regression
+  leaf. Binary and multiclass remain distinct concrete leaves (task labelling and
+  a home for future task-specific overrides), though both currently share the
+  Hard/Prob methods.
+- `lambdaCalc()` / `omegaCalc()` are attached to the **`ArgSpecs` base** (inherited
+  by all): they run the normalization pipeline around the spec's pure weight
+  functions (see the [Fit pipeline](#fit-pipeline)).
+- `data` on `ArgSpecs` is the **resolved model frame**, stored once, so a fitted
+  object is self-contained and survives `saveRDS`/reload. `specs` is held **only**
+  on `RandomMachines`; `BootOmegas` receives it at predict time.

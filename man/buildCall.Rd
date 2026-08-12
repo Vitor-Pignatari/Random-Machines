@@ -2,7 +2,7 @@
 % Please edit documentation in R/AllGenerics.R
 \name{buildCall}
 \alias{buildCall}
-\title{Method to build function calls}
+\title{Build the per-kernel fitting calls for a specification}
 \usage{
 buildCall(object, ...)
 }
@@ -12,9 +12,10 @@ buildCall(object, ...)
 \item{...}{reserved for future backends}
 }
 \value{
-a list of fitting calls
+a list of fitting calls, one per kernel
 }
 \description{
-Should operate differently based on "implementation" (kernlab/e1071)
+Dispatches on the spec's \code{implementation}; \code{kernlab} is the only backend at
+present.
 }
 \keyword{internal}

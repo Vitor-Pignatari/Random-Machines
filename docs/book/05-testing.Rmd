@@ -1,0 +1,36 @@
+# Testing {#testing}
+
+The suite pairs focused unit tests on each component with end-to-end tests on the
+whole pipeline.
+
+**Unit tests** cover the pieces in isolation: the pure weight transforms and the
+normalization pipeline (`test-weights.R`), the built-in metrics and the metric
+contract (`test-metrics.R`), the resampling functions (`test-resample.R`), the two
+`svmFit` strategies (`test-fit.R`), stage-1 assembly (`test-KernelLambdas.R`), and
+the prediction and aggregation methods (`test-predict-methods.R`,
+`test-svm-methods.R`).
+
+**End-to-end tests** (`test-e2e.R`) fit `random_machines()` and score `predict()`
+on several datasets per task. Every case asserts two things: the output contract (a
+numeric vector, a class factor, or a class-probability matrix whose rows sum to 1
+with class-named columns) and real predictive skill, beating a trivial baseline
+(majority class or mean predictor). A model that runs but does not learn therefore
+fails.
+
+Beyond the happy path, the end-to-end tests stress the pipeline on:
+
+- **Imbalanced classes.** Well-separated blobs with skewed group sizes (about 86/14
+  binary, 100/40/15 multiclass); the assertion is that the rare class is recovered
+  (minority recall), not merely that the majority baseline is beaten.
+- **Custom metrics.** User-supplied `function(truth, estimate)` metrics passed as
+  `lambdaMetric`/`omegaMetric` for each task (balanced accuracy, MAE, log-loss), a
+  bare metric with no `direction` attribute (whose orientation check is skipped),
+  and an invalid metric rejected at construction.
+- **Ensemble size.** A range of `B` from 1 upward, checking the fitted object holds
+  exactly `B` bootstrap models and that probabilistic output stays a distribution
+  at every `B`.
+- **Very small data.** Down to five observations per class, and the
+  minimum-observation boundary (fewer than five rows is rejected).
+
+Seeds are fixed and thresholds carry margin over calibrated performance, so the
+tests are deterministic rather than flaky.

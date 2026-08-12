@@ -3,8 +3,8 @@
 \docType{class}
 \name{ArgSpecsBinary-class}
 \alias{ArgSpecsBinary-class}
-\title{Binary classification specification}
+\title{Binary classification specification (hard)}
 \description{
-Concrete \link[=ArgSpecs-class]{ArgSpecs} subclass for binary tasks; built by
-\code{\link[=random_machines]{random_machines()}} with \code{task = "binary"}.
+Concrete \link[=ArgSpecs-class]{ArgSpecs} subclass for hard binary tasks; built by
+\code{\link[=random_machines]{random_machines()}} with \code{task = "binary"}, \code{prob = FALSE}.
 }

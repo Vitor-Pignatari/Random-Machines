@@ -1,15 +1,16 @@
 #' Fit a Random Machines ensemble
 #'
-#' User-facing entry point (Decision B1): builds the model specification from
-#' `data` + `formula` and immediately fits the two-stage Random Machines
-#' ensemble, returning a fitted [RandomMachines-class] object ready for
-#' [predict()]. The spec/fit split is internal -- see the private `.build_specs()`
-#' if you need a spec without fitting.
+#' The package entry point. Builds a model specification from `data` and
+#' `formula`, then fits the two-stage ensemble (kernel lambdas, then bootstrap
+#' omegas) and returns a fitted [RandomMachines-class] object to score with
+#' [predict()]. The internal `.build_specs()` produces a specification without
+#' fitting.
 #'
 #' @param ... specification arguments forwarded to the internal spec builder:
 #'   `data`, `formula`, `task`, `prob`, `implementation`, `kernels`, `args`, `B`,
-#'   and the `lambdaMetric` / `lambdaFunction` / `omegaMetric` / `omegaFunction`
-#'   overrides. See the source of `.build_specs()` for defaults.
+#'   and the `lambdaMetric` / `lambdaFunction` / `lambdaArgs` / `omegaMetric` /
+#'   `omegaFunction` / `omegaArgs` overrides. See the source of `.build_specs()`
+#'   for defaults.
 #' @param K number of cross-validation folds for the kernel-lambda stage.
 #' @param store.cv.models keep the per-fold CV models in the fitted object?
 #'   `FALSE` (default) discards them (they are diagnostic only; prediction uses
@@ -33,10 +34,10 @@ random_machines <- function(..., K = 5, store.cv.models = FALSE) {
 #' Build a Random Machines specification (internal)
 #'
 #' Assembles the [ArgSpecs-class] object the pipeline fits from. Resolves `data`
-#' + `formula` into the stored model frame (Decision A2) -- so the spec is
-#' self-contained and survives `saveRDS`/reload -- and fills task-aware metric
-#' and weight-function defaults. Not exported; [random_machines()] is the public
-#' verb.
+#' and `formula` into a stored model frame, so the specification is
+#' self-contained and survives `saveRDS`/reload, and fills task-aware metric and
+#' weight-function defaults. Not exported; [random_machines()] is the public
+#' entry point.
 #'
 #' @param data a data.frame containing the response and predictors
 #' @param formula formula defining the model fit
@@ -46,22 +47,29 @@ random_machines <- function(..., K = 5, store.cv.models = FALSE) {
 #' @param kernels character identifiers for the kernels listed under 'args'
 #' @param args list of arguments passed to kernlab's 'ksvm' per kernel
 #' @param B number of bootstrap models
-#' @param lambdaMetric metric used to compute per-kernel lambdas, as a yardstick
-#'   metric object / `metric_set` (which carries a `direction`). `NULL` (default)
-#'   selects `yardstick::accuracy` for classification and `yardstick::rmse` for
-#'   regression. The metric's direction drives `lambdaFunction`'s default.
-#' @param lambdaFunction function mapping kernel metrics to selection
-#'   probabilities. `NULL` (default) follows the metric direction:
-#'   [log_normalize()] for maximize metrics, [inverse_normalize()] for minimize.
-#' @param omegaMetric metric used to compute per-model omegas, as a yardstick
-#'   metric object / `metric_set`. `NULL` (default) selects `yardstick::accuracy`
-#'   for classification and `yardstick::rmse` for regression.
-#' @param omegaFunction function mapping bootstrap metrics to model weights.
-#'   `NULL` (default) follows the metric direction: [default_weight_binary()] for
-#'   maximize, [default_weight_regression()] for minimize.
+#' @param lambdaMetric metric used to score kernels in the lambda stage, as a
+#'   `function(truth, estimate)` returning a single finite numeric. `NULL`
+#'   (default) selects the built-in metric for the task: accuracy (hard
+#'   classification), Brier score (probabilistic classification) or RMSE
+#'   (regression). A supplied metric is validated at construction.
+#' @param lambdaFunction pure transform mapping (min-max scaled) kernel metrics
+#'   to raw lambda weights. `NULL` (default) selects the orientation-matching
+#'   grid default: [logit_weights()] (hard classification), [inv_logit_weights()]
+#'   (probabilistic classification) or [softmax_weights()] (regression).
+#' @param lambdaArgs list of pre-bound arguments for `lambdaFunction` (e.g.
+#'   `list(beta = 2)` for [softmax_weights()]); default `list()`.
+#' @param omegaMetric metric used to score models in the omega stage; `NULL`
+#'   (default) uses the same grid as `lambdaMetric`.
+#' @param omegaFunction pure transform mapping (min-max scaled) model metrics to
+#'   raw omega weights. `NULL` (default) selects the grid default:
+#'   [inv_sq_gap_weights()] (hard classification), [inv_sq_weights()]
+#'   (probabilistic classification) or [softmax_weights()] (regression).
+#' @param omegaArgs list of pre-bound arguments for `omegaFunction`; default
+#'   `list()`. May differ from `lambdaArgs` (e.g. a different softmax `beta`).
 #'
-#' @returns an object inheriting from [ArgSpecs-class]
-#'   (`ArgSpecsBinary`, `ArgSpecsMultiClass` or `ArgSpecsReg`).
+#' @returns an object inheriting from [ArgSpecs-class] (`ArgSpecsBinary`,
+#'   `ArgSpecsMultiClass`, `ArgSpecsBinaryProb`, `ArgSpecsMultiClassProb` or
+#'   `ArgSpecsReg`).
 #'
 #' @importFrom methods new is
 #' @importFrom stats model.frame
@@ -92,11 +100,13 @@ random_machines <- function(..., K = 5, store.cv.models = FALSE) {
                          B              = 100L,
                          lambdaMetric   = NULL,
                          lambdaFunction = NULL,
+                         lambdaArgs     = list(),
                          omegaMetric    = NULL,
-                         omegaFunction  = NULL) {
+                         omegaFunction  = NULL,
+                         omegaArgs      = list()) {
 
-  ## --- Resolve the model frame (Decision A2) ----------------------------
-  ## Store the resolved model frame -- response + the columns `formula` needs --
+  ## --- Resolve the model frame -----------------------------------------
+  ## Store the resolved model frame (response plus the columns `formula` needs)
   ## so the spec is self-contained (no symbol, no dependence on a global that
   ## might be renamed or dropped before predict/reload).
   if (!is.data.frame(data)) {
@@ -104,32 +114,28 @@ random_machines <- function(..., K = 5, store.cv.models = FALSE) {
   }
   mf <- stats::model.frame(formula, data = data)
 
-  ## Resolve which ArgSpecs subclass to build from the requested task.
+  ## Resolve which ArgSpecs subclass to build from (task, prob). `prob` is now a
+  ## type, not a runtime branch: probabilistic classification builds a `*Prob`
+  ## subclass so svmPredict/rmAggregate/validity dispatch on it.
   task <- match.arg(task)
-  specs_class <- c(
-    binary     = "ArgSpecsBinary",
-    multiclass = "ArgSpecsMultiClass",
-    regression = "ArgSpecsReg"
-  )[[task]]
+  specs_class <- if (identical(task, "regression")) {
+    "ArgSpecsReg"
+  } else if (isTRUE(prob)) {
+    c(binary = "ArgSpecsBinaryProb", multiclass = "ArgSpecsMultiClassProb")[[task]]
+  } else {
+    c(binary = "ArgSpecsBinary", multiclass = "ArgSpecsMultiClass")[[task]]
+  }
 
-  ## Task-aware metric defaults, as yardstick metric *objects* (which carry a
-  ## `direction`): accuracy (maximize) for classification, rmse (minimize) for
-  ## regression. Any metric the caller supplies overrides these. (Decision J2.)
-  regression <- identical(task, "regression")
-  if (is.null(lambdaMetric))
-    lambdaMetric <- if (regression) yardstick::rmse else yardstick::accuracy
-  if (is.null(omegaMetric))
-    omegaMetric  <- if (regression) yardstick::rmse else yardstick::accuracy
+  ## Grid defaults are resolved eagerly (concrete objects stored in the slots).
+  ## The metric and its paired weight function share an orientation (validity
+  ## enforces this for user-supplied pairs). See `.default_metric` /
+  ## `.default_weight_fns` in weights.R.
+  if (is.null(lambdaMetric)) lambdaMetric <- .default_metric(task, prob)
+  if (is.null(omegaMetric))  omegaMetric  <- .default_metric(task, prob)
 
-  ## The weight transform follows the *metric's direction*, not the task: a
-  ## maximize metric (higher score -> higher weight) uses the logit / accuracy
-  ## transforms; a minimize metric (lower error -> higher weight) uses the
-  ## inverse-error ones. `.uses_minimize` falls back to the task default when a
-  ## metric carries no direction (e.g. a bare function or a `_vec` metric).
-  if (is.null(lambdaFunction))
-    lambdaFunction <- if (.uses_minimize(lambdaMetric, regression)) inverse_normalize else log_normalize
-  if (is.null(omegaFunction))
-    omegaFunction  <- if (.uses_minimize(omegaMetric, regression)) default_weight_regression else default_weight_binary
+  defs <- .default_weight_fns(task, prob)
+  if (is.null(lambdaFunction)) lambdaFunction <- defs$lambda
+  if (is.null(omegaFunction))  omegaFunction  <- defs$omega
 
   new(
     specs_class,
@@ -143,7 +149,9 @@ random_machines <- function(..., K = 5, store.cv.models = FALSE) {
     B              = as.integer(B),
     lambdaMetric   = lambdaMetric,
     lambdaFunction = lambdaFunction,
+    lambdaArgs     = lambdaArgs,
     omegaMetric    = omegaMetric,
-    omegaFunction  = omegaFunction
+    omegaFunction  = omegaFunction,
+    omegaArgs      = omegaArgs
   )
 }

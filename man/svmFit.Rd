@@ -29,13 +29,11 @@ per-kernel list of \code{list(fit, predict, metrics)} (\code{KernelSamples}), or
 a single such list (\code{BootSamples})
 }
 \description{
-Internal generic dispatched on the \emph{resample object} (Decision E), replacing
-the old length-based mode switch in \code{svm_fit_any}. A \link{KernelSamples} runs every
-kernel across every CV fold (stage 1, lambdas); a \link{BootSamples} fits one
+Internal generic dispatched on the resample object. A \link{KernelSamples} runs
+every kernel across every CV fold (stage 1, lambdas); a \link{BootSamples} fits one
 lambda-sampled kernel per bootstrap replicate (stage 2, omegas). Prediction is
 routed through \code{\link[=svmPredict]{svmPredict()}}, so probabilistic models yield probability
-matrices and vote models yield class factors; the weighting metric is always
-computed on hard classes.
+matrices and vote models yield class factors.
 }
 \section{Methods (by class)}{
 \itemize{

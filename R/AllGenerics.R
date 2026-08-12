@@ -1,38 +1,45 @@
-#' Lambdas calculation - setting the generic allows for building different functions as methods for the KernelLambdas class
-#' Ideally, a restricted number of methods would exist to operate on the class to calculate Lambdas
-#' 
-#' Kernel function sampling probability
+#' Kernel selection probabilities (lambdas) from per-kernel metrics
 #'
-#' @param metrics numeric vector containing metrics for each kernel function
+#' Dispatches on the [ArgSpecs-class] spec so the normalization pipeline can be
+#' specialised per task if needed. The base method (on `ArgSpecs`) min-max scales
+#' the metrics, applies the spec's pure `lambdaFunction` (with `lambdaArgs`), and
+#' projects the result onto the probability simplex (sums to 1).
+#'
+#' @param specs an ArgSpecs object
+#' @param metrics numeric vector of per-kernel metrics
 #' @return a numeric vector of kernel selection probabilities (summing to 1)
 #' @keywords internal
-setGeneric("lambdaCalc", function(metrics) standardGeneric("lambdaCalc"))
+setGeneric("lambdaCalc", function(specs, metrics) standardGeneric("lambdaCalc"))
 
-#' Omega calculation - setting the generic allows for building different functions as methods for the BootOmega class
-#' Ideally, a restricted number of methods would exist to operate on the class to calculate omegas
+#' Per-model weights (omegas) from bootstrap metrics
 #'
-#' Final weights of models trained on replicates
+#' Dispatches on the [ArgSpecs-class] spec. The base method (on `ArgSpecs`)
+#' min-max scales the metrics, applies the spec's pure `omegaFunction` (with
+#' `omegaArgs`), and min-max scales the result to `[0, 1]` (the final Sum=1
+#' voting weights are formed at predict time by `.normalize_weights`).
 #'
-#' @param metrics numeric vector of size B
+#' @param specs an ArgSpecs object
+#' @param metrics numeric vector of per-model metrics (length B)
 #' @return a numeric vector of per-model weights (omegas), length B
 #' @keywords internal
-setGeneric("omegaCalc", function(metrics) standardGeneric("omegaCalc"))
+setGeneric("omegaCalc", function(specs, metrics) standardGeneric("omegaCalc"))
 
-#' Method to build function calls
+#' Build the per-kernel fitting calls for a specification
 #'
-#' Should operate differently based on "implementation" (kernlab/e1071)
+#' Dispatches on the spec's `implementation`; `kernlab` is the only backend at
+#' present.
 #'
 #' @param object an ArgSpecs object
 #' @param ... reserved for future backends
-#' @return a list of fitting calls
+#' @return a list of fitting calls, one per kernel
 #' @keywords internal
 setGeneric("buildCall", function(object, ...) standardGeneric("buildCall"))
 
 #' Predict from a fitted kernel SVM according to task and probability mode
 #'
-#' Dispatches on the [ArgSpecs-class] subclass so each case -- binary /
-#' multiclass / regression, in probabilistic or majority-vote mode -- returns
-#' predictions in the shape its downstream aggregation expects.
+#' Dispatches on the [ArgSpecs-class] subclass so each case (binary, multiclass
+#' or regression, in probabilistic or majority-vote mode) returns predictions in
+#' the shape its downstream aggregation expects.
 #'
 #' @param specs an ArgSpecs object; drives dispatch via its subclass and `prob`
 #' @param model a fitted `kernlab::ksvm` model
@@ -66,13 +73,11 @@ setGeneric("rmAggregate", function(specs, predictions, weights, ...) standardGen
 
 #' Fit SVMs across a resampling scheme
 #'
-#' Internal generic dispatched on the *resample object* (Decision E), replacing
-#' the old length-based mode switch in `svm_fit_any`. A [KernelSamples] runs every
-#' kernel across every CV fold (stage 1, lambdas); a [BootSamples] fits one
+#' Internal generic dispatched on the resample object. A [KernelSamples] runs
+#' every kernel across every CV fold (stage 1, lambdas); a [BootSamples] fits one
 #' lambda-sampled kernel per bootstrap replicate (stage 2, omegas). Prediction is
 #' routed through [svmPredict()], so probabilistic models yield probability
-#' matrices and vote models yield class factors; the weighting metric is always
-#' computed on hard classes.
+#' matrices and vote models yield class factors.
 #'
 #' @param samples a `KernelSamples` or `BootSamples` object (drives dispatch)
 #' @param specs an ArgSpecs object; drives per-case [svmPredict()] dispatch

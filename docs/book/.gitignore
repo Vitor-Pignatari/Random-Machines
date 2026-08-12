@@ -1,0 +1,3 @@
+# Generated bookdown output (rebuild with bookdown::render_book("docs/book")).
+_book/
+_bookdown_files/

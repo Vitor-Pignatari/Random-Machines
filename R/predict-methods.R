@@ -14,8 +14,8 @@ NULL
 #' @param newdata a data.frame of observations to predict; must contain the
 #'   predictor columns used at fit time
 #' @param specs the `ArgSpecs` the ensemble was fit from; drives task/prob
-#'   dispatch. `BootOmegas` no longer stores it (Decision K1), so it must be
-#'   supplied -- `predict(RandomMachines)` passes its own `@specs`.
+#'   dispatch. `BootOmegas` does not store it, so it must be supplied;
+#'   `predict(RandomMachines)` passes its own `@specs`.
 #' @param ... unused
 #'
 #' @return a numeric vector (regression), a class factor (majority vote), or a

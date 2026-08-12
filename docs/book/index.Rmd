@@ -1,0 +1,40 @@
+---
+title: "randomMachines: Architecture"
+site: bookdown::bookdown_site
+documentclass: book
+description: "Living documentation of the randomMachines class pipeline."
+---
+
+# Overview {#overview}
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+# Render a mermaid diagram as a <pre class="mermaid"> block. The source is
+# HTML-escaped so classDiagram tokens like <<virtual>> and <|-- survive the
+# browser's HTML parser; mermaid reads the element's decoded textContent.
+mermaid <- function(code) {
+  code <- gsub("&", "&amp;", code, fixed = TRUE)
+  code <- gsub("<", "&lt;",  code, fixed = TRUE)
+  code <- gsub(">", "&gt;",  code, fixed = TRUE)
+  sprintf('<pre class="mermaid">\n%s\n</pre>', code)
+}
+```
+
+`randomMachines` fits a weighted ensemble of kernel SVMs in **two stages**:
+
+1. **Kernel lambdas.** Cross-validate every candidate kernel and turn its mean
+   out-of-fold performance into a *selection probability* (λ).
+2. **Bootstrap omegas.** Draw `B` bootstrap replicates, fit a λ-sampled kernel on
+   each, and weight the models by their out-of-bag performance (ω).
+
+Prediction scores new data with every bootstrap model and aggregates the results,
+weighted by the (normalised) ω. The public entry point is a single verb,
+`random_machines()`, which builds a specification and fits the ensemble; it
+returns a self-contained `RandomMachines` object you score with `predict()`.
+
+The design is S4 throughout: a virtual `ArgSpecs` spec whose task subclass drives
+prediction/aggregation dispatch, and small value classes for each pipeline stage.
+The chapters that follow document the [class model](#class-model), the
+[fit pipeline](#fit-pipeline), [prediction](#prediction), and a
+[slot reference](#slot-reference).

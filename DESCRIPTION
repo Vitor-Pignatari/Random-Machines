@@ -1,17 +1,31 @@
 Package: randomMachines
-Title: What the Package Does (One Line, Title Case)
+Title: Weighted Ensembles of Kernel Support Vector Machines
 Version: 0.0.0.9000
-Authors@R: 
+Authors@R:
     person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
+Description: Fits Random Machines, a support vector machine ensemble that
+    draws on several kernel functions rather than committing to one. Fitting
+    runs in two stages. A cross-validation stage scores each candidate kernel
+    and maps its performance to a selection probability (lambda); a bootstrap
+    stage fits one lambda-sampled kernel per resample and weights the fitted
+    models by their out-of-bag performance (omega). Prediction aggregates the
+    bootstrap models by their weights, yielding a weighted majority vote, an
+    averaged class-probability matrix, or a weighted mean for binary,
+    multiclass, probabilistic and regression tasks.
 License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
     license
 Encoding: UTF-8
+Imports:
+    kernlab,
+    methods,
+    rlang,
+    stats
 Roxygen: list(markdown = TRUE)
 Config/roxygen2/version: 8.0.0
 Collate: 
     'bootstrap.R'
     'fit.R'
+    'metrics.R'
     'weights.R'
     'resample.R'
     'AllGenerics.R'
@@ -23,6 +37,8 @@ Collate:
     'svm-methods.R'
     'validity.R'
 RoxygenNote: 7.3.1
-Suggests: 
+Suggests:
+    bookdown,
+    rmarkdown,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3

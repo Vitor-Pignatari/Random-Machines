@@ -15,8 +15,8 @@ split (see \code{\link[=kfold_cv]{kfold_cv()}})}
 \item{svmcalls}{per-kernel ksvm calls from \code{.call_builder()}}
 
 \item{store.cv.models}{keep the per-fold CV models in the \code{kernelModels} slot?
-\code{FALSE} (default) discards them once their metrics are computed -- they are
-not used for prediction, only diagnostics -- keeping the fitted object small.}
+\code{FALSE} (default) discards them once their metrics are computed. They serve
+diagnostics only, not prediction, so dropping them keeps the object small.}
 }
 \value{
 a KernelLambdas object

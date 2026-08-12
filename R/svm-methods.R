@@ -1,10 +1,12 @@
 #' @include AllGenerics.R AllClasses.R
 NULL
 
-# svmPredict() methods -- two cases: regression and classification. Binary and
-# multiclass share the same method via the virtual ArgSpecsClassif parent
-# (Decision C/C2); S4 dispatch gives both the method below. A binary-only
-# override can be added later by defining svmPredict on "ArgSpecsBinary".
+# svmPredict() methods: three cases dispatched on the spec subclass. Regression
+# (numeric), hard classification (class factor) and probabilistic classification
+# (probability matrix). The prob vs vote distinction is carried by the type
+# (ArgSpecsClassifHard vs ArgSpecsClassifProb), so there is no `specs@prob`
+# branch. Binary and multiclass share each method via the virtual Hard/Prob
+# parents.
 
 #' @describeIn svmPredict Regression: numeric predictions.
 #' @importFrom methods setMethod
@@ -16,51 +18,31 @@ setMethod(
   }
 )
 
-#' @describeIn svmPredict Classification (binary and multiclass). `prob = TRUE`
-#'   returns the n x k class-probability matrix; `prob = FALSE` returns the
-#'   predicted class factor (the majority-vote input).
+#' @describeIn svmPredict Hard classification: the predicted class factor (the
+#'   majority-vote input).
 setMethod(
   "svmPredict",
-  signature(specs = "ArgSpecsClassif"),
+  signature(specs = "ArgSpecsClassifHard"),
   function(specs, model, newdata, ...) {
-    if (isTRUE(specs@prob)) {
-      kernlab::predict(model, newdata, type = "probabilities")
-    } else {
-      kernlab::predict(model, newdata, type = "response")
-    }
+    kernlab::predict(model, newdata, type = "response")
+  }
+)
+
+#' @describeIn svmPredict Probabilistic classification: the n x k
+#'   class-probability matrix.
+setMethod(
+  "svmPredict",
+  signature(specs = "ArgSpecsClassifProb"),
+  function(specs, model, newdata, ...) {
+    kernlab::predict(model, newdata, type = "probabilities")
   }
 )
 
 
-# rmAggregate() methods -- combine per-model predictions using model weights.
-
-#' Weighted majority vote / probability average shared by the classification
-#' cases. Columns are aligned by class name so models trained on different
-#' resamples combine correctly.
-#' @noRd
-.aggregate_classif <- function(specs, predictions, weights) {
-  if (isTRUE(specs@prob)) {
-    # predictions: list of n x k probability matrices
-    lev <- sort(unique(unlist(lapply(predictions, colnames))))
-    n   <- nrow(predictions[[1]])
-    acc <- matrix(0, nrow = n, ncol = length(lev), dimnames = list(NULL, lev))
-    for (b in seq_along(predictions)) {
-      pb <- predictions[[b]]
-      acc[, colnames(pb)] <- acc[, colnames(pb)] + weights[b] * pb
-    }
-    acc
-  } else {
-    # predictions: list of class factors
-    lev   <- sort(unique(unlist(lapply(predictions, function(p) as.character(levels(p))))))
-    n     <- length(predictions[[1]])
-    score <- matrix(0, nrow = n, ncol = length(lev), dimnames = list(NULL, lev))
-    for (b in seq_along(predictions)) {
-      idx <- cbind(seq_len(n), match(as.character(predictions[[b]]), lev))
-      score[idx] <- score[idx] + weights[b]
-    }
-    factor(lev[max.col(score, ties.method = "first")], levels = lev)
-  }
-}
+# rmAggregate() methods: combine per-model predictions using model weights,
+# dispatched on the same Reg / Hard / Prob split as svmPredict(). Columns are
+# aligned by class name so models trained on different resamples combine
+# correctly.
 
 #' @describeIn rmAggregate Regression: weighted mean of the numeric predictions.
 setMethod(
@@ -71,22 +53,44 @@ setMethod(
   }
 )
 
-#' @describeIn rmAggregate Classification (binary and multiclass): weighted
-#'   majority vote (`prob = FALSE`) or weighted probability average
-#'   (`prob = TRUE`). Shared by both via the virtual `ArgSpecsClassif` parent.
+#' @describeIn rmAggregate Hard classification: weighted majority vote over the
+#'   per-model class factors.
 setMethod(
   "rmAggregate",
-  signature(specs = "ArgSpecsClassif"),
+  signature(specs = "ArgSpecsClassifHard"),
   function(specs, predictions, weights, ...) {
-    .aggregate_classif(specs, predictions, weights)
+    lev   <- sort(unique(unlist(lapply(predictions, function(p) as.character(levels(p))))))
+    n     <- length(predictions[[1]])
+    score <- matrix(0, nrow = n, ncol = length(lev), dimnames = list(NULL, lev))
+    for (b in seq_along(predictions)) {
+      idx <- cbind(seq_len(n), match(as.character(predictions[[b]]), lev))
+      score[idx] <- score[idx] + weights[b]
+    }
+    factor(lev[max.col(score, ties.method = "first")], levels = lev)
+  }
+)
+
+#' @describeIn rmAggregate Probabilistic classification: weighted average of the
+#'   per-model class-probability matrices.
+setMethod(
+  "rmAggregate",
+  signature(specs = "ArgSpecsClassifProb"),
+  function(specs, predictions, weights, ...) {
+    lev <- sort(unique(unlist(lapply(predictions, colnames))))
+    n   <- nrow(predictions[[1]])
+    acc <- matrix(0, nrow = n, ncol = length(lev), dimnames = list(NULL, lev))
+    for (b in seq_along(predictions)) {
+      pb <- predictions[[b]]
+      acc[, colnames(pb)] <- acc[, colnames(pb)] + weights[b] * pb
+    }
+    acc
   }
 )
 
 
-# svmFit() methods -- fit SVMs over a resampling scheme, dispatched on the
-# resample object (Decision E). Per-fit logic is shared via .fit_one(); result
-# assembly via .assemble_fits() (both in fit.R). This replaces the old
-# `svm_fit_any` length-based mode switch.
+# svmFit() methods: fit SVMs over a resampling scheme, dispatched on the resample
+# object. Per-fit logic is shared via .fit_one(); result assembly via
+# .assemble_fits() (both in fit.R).
 
 #' @describeIn svmFit Stage 1 (lambdas): every kernel across every CV fold.
 setMethod(

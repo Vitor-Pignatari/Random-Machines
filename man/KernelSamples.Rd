@@ -3,7 +3,7 @@
 \docType{class}
 \name{KernelSamples}
 \alias{KernelSamples}
-\title{Initial model training data}
+\title{Cross-validation splits for the kernel-lambda stage}
 \usage{
 KernelSamples(splitfun, splitargs)
 }
@@ -16,14 +16,17 @@ KernelSamples(splitfun, splitargs)
 a KernelSamples object
 }
 \description{
-training data splits and validation setequal
+Holds the resampling function, its arguments, and the resulting \code{train}/\code{test}
+fold matrices every kernel is cross-validated over in stage 1.
 }
 \section{Slots}{
 
 \describe{
-\item{\code{data}}{list of training data splits}
+\item{\code{data}}{the \code{train}/\code{test} fold matrices returned by \code{splitfun}}
 
-\item{\code{splitfun}}{data splitting function}
+\item{\code{splitfun}}{resampling function (e.g. \code{\link[=kfold_cv]{kfold_cv()}})}
+
+\item{\code{splitargs}}{arguments passed to \code{splitfun}}
 }}
 
 \examples{

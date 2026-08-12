@@ -1,12 +1,14 @@
-#' Simple boostrap function
-#' 
-#' @title simple_bs
-#' @description Bootstrap, generating in-sample and out-of-sample elements in two lists
+#' Simple bootstrap resampling
 #'
-#' @param indexes character or string containing either data.frame row names or indexes
-#' @param B scalar representing number of bootstrap samples to generate
+#' Draws `B` bootstrap resamples of `indexes`, returning the in-sample
+#' (`train`) and out-of-bag (`test`) memberships as two matrices, one column
+#' per resample.
 #'
-#' @return List containing column-per-resample matrix for bootstrap samples and indicator matrix for OOB samples matrix
+#' @param indexes integer vector of row indices to resample
+#' @param B number of bootstrap resamples to generate
+#'
+#' @return `list(train, test)`: `train` holds the resampled indices
+#'   (column per resample), `test` flags the out-of-bag rows.
 #'
 #' @export
 #'

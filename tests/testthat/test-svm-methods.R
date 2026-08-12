@@ -48,8 +48,8 @@ test_that("svmPredict: multiclass probabilistic returns an n x k probability mat
 test_that("svmPredict: regression returns a numeric vector", {
   specs <- .build_specs(
     mtcars, mpg ~ ., task = "regression",
-    lambdaMetric = yardstick::rmse,
-    omegaMetric  = yardstick::rmse
+    lambdaMetric = .metric_rmse,
+    omegaMetric  = .metric_rmse
   )
 
   pred <- svmPredict(specs, fit_first(specs, mtcars), mtcars)

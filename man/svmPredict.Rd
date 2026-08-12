@@ -3,14 +3,17 @@
 \name{svmPredict}
 \alias{svmPredict}
 \alias{svmPredict,ArgSpecsReg-method}
-\alias{svmPredict,ArgSpecsClassif-method}
+\alias{svmPredict,ArgSpecsClassifHard-method}
+\alias{svmPredict,ArgSpecsClassifProb-method}
 \title{Predict from a fitted kernel SVM according to task and probability mode}
 \usage{
 svmPredict(specs, model, newdata, ...)
 
 \S4method{svmPredict}{ArgSpecsReg}(specs, model, newdata, ...)
 
-\S4method{svmPredict}{ArgSpecsClassif}(specs, model, newdata, ...)
+\S4method{svmPredict}{ArgSpecsClassifHard}(specs, model, newdata, ...)
+
+\S4method{svmPredict}{ArgSpecsClassifProb}(specs, model, newdata, ...)
 }
 \arguments{
 \item{specs}{an ArgSpecs object; drives dispatch via its subclass and \code{prob}}
@@ -30,16 +33,18 @@ matrix with class-named columns.
 }
 }
 \description{
-Dispatches on the \link[=ArgSpecs-class]{ArgSpecs} subclass so each case -- binary /
-multiclass / regression, in probabilistic or majority-vote mode -- returns
-predictions in the shape its downstream aggregation expects.
+Dispatches on the \link[=ArgSpecs-class]{ArgSpecs} subclass so each case (binary, multiclass
+or regression, in probabilistic or majority-vote mode) returns predictions in
+the shape its downstream aggregation expects.
 }
 \section{Methods (by class)}{
 \itemize{
 \item \code{svmPredict(ArgSpecsReg)}: Regression: numeric predictions.
 
-\item \code{svmPredict(ArgSpecsClassif)}: Classification (binary and multiclass). \code{prob = TRUE}
-returns the n x k class-probability matrix; \code{prob = FALSE} returns the
-predicted class factor (the majority-vote input).
+\item \code{svmPredict(ArgSpecsClassifHard)}: Hard classification: the predicted class factor (the
+majority-vote input).
+
+\item \code{svmPredict(ArgSpecsClassifProb)}: Probabilistic classification: the n x k
+class-probability matrix.
 
 }}

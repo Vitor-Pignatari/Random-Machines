@@ -1,0 +1,9 @@
+bookdown::gitbook:
+  includes:
+    in_header: header.html
+  config:
+    toc:
+      collapse: section
+      before: |
+        <li><a href="./">randomMachines: Architecture</a></li>
+    sharing: no

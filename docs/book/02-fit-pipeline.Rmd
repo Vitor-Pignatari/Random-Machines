@@ -1,0 +1,67 @@
+# Fit pipeline {#fit-pipeline}
+
+`random_machines()` → `.build_specs()` (spec) → `RandomMachines()` (orchestrator)
+→ the two stages → a fitted object.
+
+```{r fit-diagram, results='asis'}
+cat(mermaid('flowchart TD
+  U(["user: random_machines(data, formula, task, prob, K, store.cv.models)"])
+  U --> BUILD[".build_specs() : resolve model frame, grid defaults (metric + pure weight fn)"]
+  BUILD --> SPEC["ArgSpecs leaf (Binary / MultiClass / *Prob / Reg)"]
+  SPEC --> ORCH["RandomMachines(specs, K, store.cv.models)"]
+  ORCH --> CB[".call_builder(specs) : per-kernel ksvm call templates"]
+
+  subgraph S1["Stage 1 : kernel lambdas"]
+    direction TB
+    KS["KernelSamples(kfold_cv) : K stratified CV folds"]
+    KS --> FIT1["svmFit(KernelSamples) : every kernel x every fold"]
+    FIT1 --> M1["mean out-of-fold metric per kernel"]
+    M1 --> LAM["lambdaCalc(specs, metrics) : min-max, lambdaFunction, simplex"]
+    LAM --> KL["KernelLambdas"]
+  end
+
+  subgraph S2["Stage 2 : bootstrap omegas"]
+    direction TB
+    BS["BootSamples(simple_bs) : B bootstrap resamples + OOB"]
+    BS --> DRAW["sample B kernels by lambda"]
+    DRAW --> FIT2["svmFit(BootSamples) : one lambda-sampled kernel per replicate"]
+    FIT2 --> M2["out-of-bag metric per model"]
+    M2 --> OM["omegaCalc(specs, metrics) : min-max, omegaFunction, min-max"]
+    OM --> BO["BootOmegas : fitted models + omega"]
+  end
+
+  CB --> KS
+  KL -->|"lambda"| DRAW
+  BO --> RM["RandomMachines (fitted ensemble)"]'))
+```
+
+Both stages fit through the **same** `svmFit` generic and the shared per-fit
+helper `.fit_one()` (fit → predict held-out rows → score); they differ only in the
+resample object they dispatch on.
+
+## The normalization pipeline
+
+The weight/probability functions (`logit_weights`, `inv_logit_weights`,
+`softmax_weights`, `inv_sq_gap_weights`, `inv_sq_weights`) are **pure transforms**
+with only `eps` domain guards; they do no normalization. All scaling lives in
+`lambdaCalc()` / `omegaCalc()`:
+
+- **both stages** min-max scale the raw metrics before the transform;
+- **lambda** projects the transform's output onto the probability simplex (Σ = 1,
+  the hard sampling-weight rule);
+- **omega** min-max scales the output to `[0, 1]` (a comparable share; the final
+  Σ = 1 voting weights form at predict time via `.normalize_weights`).
+
+A **metric** is any `function(truth, estimate)` returning a single finite numeric
+(estimate = numeric vector / class factor / probability matrix by task). The
+defaults, accuracy, RMSE and Brier, are **built into the package** (no external
+metrics dependency); a user may pass any function honouring that contract, checked
+at construction. Metrics are min-max scaled *without flipping*, so a **minimize**
+metric (RMSE, Brier) puts the best model at `x = 0` and a **maximize** metric
+(accuracy) at `x = 1`. Each metric is therefore paired with an orientation-matching
+function
+(minimize → decreasing, maximize → increasing); validity rejects a mismatched pair.
+`beta` for `softmax_weights` is carried in `lambdaArgs` / `omegaArgs` and may differ
+between the two stages. Setting `store.cv.models = TRUE` keeps the stage-1 fold
+models in `kernelLambdas@kernelModels` (off by default, as they are diagnostic
+only).

@@ -2,23 +2,23 @@
 % Please edit documentation in R/bootstrap.R
 \name{simple_bs}
 \alias{simple_bs}
-\title{simple_bs}
+\title{Simple bootstrap resampling}
 \usage{
 simple_bs(indexes, B)
 }
 \arguments{
-\item{indexes}{character or string containing either data.frame row names or indexes}
+\item{indexes}{integer vector of row indices to resample}
 
-\item{B}{scalar representing number of bootstrap samples to generate}
+\item{B}{number of bootstrap resamples to generate}
 }
 \value{
-List containing column-per-resample matrix for bootstrap samples and indicator matrix for OOB samples matrix
+\code{list(train, test)}: \code{train} holds the resampled indices
+(column per resample), \code{test} flags the out-of-bag rows.
 }
 \description{
-Bootstrap, generating in-sample and out-of-sample elements in two lists
-}
-\details{
-Simple boostrap function
+Draws \code{B} bootstrap resamples of \code{indexes}, returning the in-sample
+(\code{train}) and out-of-bag (\code{test}) memberships as two matrices, one column
+per resample.
 }
 \examples{
 simple_bs(indexes = 1:10, B = 5)

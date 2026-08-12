@@ -1,0 +1,19 @@
+# Prediction {#prediction}
+
+```{r predict-diagram, results='asis'}
+cat(mermaid('flowchart TD
+  ND(["predict(rm, newdata)"])
+  ND --> PR["predict(RandomMachines) : predict(BootOmegas, newdata, specs)"]
+  PR --> SP["svmPredict(specs, model, newdata) for each bootstrap model"]
+  SP --> W["weights = .normalize_weights(bootOmegas)"]
+  W --> AGG["rmAggregate(specs, predictions, weights)"]
+  AGG --> Q{"spec subclass"}
+  Q -->|"ArgSpecsReg"| RN["weighted mean : numeric vector"]
+  Q -->|"ArgSpecsClassifHard"| RV["weighted majority vote : class factor"]
+  Q -->|"ArgSpecsClassifProb"| RP["weighted probability average : n x k matrix"]'))
+```
+
+`svmPredict()` returns the shape each case needs (numeric / class factor /
+probability matrix); `rmAggregate()` combines them, dispatching on the same
+`ArgSpecs` subclass. Classification probability/vote columns are aligned **by
+class name**, so models trained on different resamples combine correctly.

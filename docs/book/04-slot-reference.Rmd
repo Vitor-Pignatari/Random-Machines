@@ -1,0 +1,19 @@
+# Slot reference {#slot-reference}
+
+| Class | Key slots | Role |
+|---|---|---|
+| `ArgSpecs` *(virtual)* | `data` (model frame), `formula`, `task`, `prob`, `implementation`, `kernels`, `args`, `B`, `lambdaMetric`, `lambdaFunction`, `lambdaArgs`, `omegaMetric`, `omegaFunction`, `omegaArgs` | The fitting specification; task subclass drives dispatch |
+| `ArgSpecsClassif` *(virtual)* | (none) | Shared parent of all classification specs (response must be a factor) |
+| `ArgSpecsClassifHard` *(virtual)* | (none) | Hard classification: class-factor predictions, hard-class metric |
+| `ArgSpecsClassifProb` *(virtual)* | (none) | Probabilistic classification: probability-matrix predictions, Brier-score metric |
+| `ArgSpecsBinary` / `ArgSpecsMultiClass` | (none) | Concrete hard-classification leaves |
+| `ArgSpecsBinaryProb` / `ArgSpecsMultiClassProb` | (none) | Concrete probabilistic-classification leaves |
+| `ArgSpecsReg` | (none) | Concrete regression leaf |
+| `KernelSamples` | `data` (CV split), `splitfun`, `splitargs` | Stage-1 cross-validation folds |
+| `KernelLambdas` | `kernelMetrics`, `kernelLambdas`, `kernelModels` | Stage-1 kernel probabilities (λ) |
+| `BootSamples` | `bootData` (train/OOB indices), `bootFun`, `bootArgs` | Stage-2 bootstrap resamples |
+| `BootOmegas` | `bootModels`, `bootMetrics`, `bootOmegas` | Stage-2 fitted models + weights (ω) |
+| `RandomMachines` | `specs` + the four stage objects | The fitted ensemble; entry point for `predict()` |
+
+*Generated as living documentation of the class pipeline; keep in sync with `R/`
+and [`ARCHITECTURE.md`](../../ARCHITECTURE.md).*

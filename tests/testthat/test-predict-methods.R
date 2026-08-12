@@ -5,7 +5,7 @@
 test_that("BootOmegas holds finite (no longer Inf) omegas", {
   d <- iris_binary()
   specs <- .build_specs(d, Species ~ ., task = "binary", prob = FALSE, B = 15)
-  bo <- build_ensemble(specs, d, c(0.34, 0.33, 0.33))
+  bo <- build_ensemble(specs, d)
 
   expect_s4_class(bo, "BootOmegas")
   expect_true(all(is.finite(bo@bootOmegas)))
@@ -13,12 +13,11 @@ test_that("BootOmegas holds finite (no longer Inf) omegas", {
 
 test_that("predict(BootOmegas) does weighted majority vote for binary", {
   set.seed(1)
-  d  <- iris_binary()
-  d  <- d[sample(nrow(d)), ]
-  tr <- d[1:70, ]; te <- d[71:100, ]
+  sp <- shuffle_split(iris_binary(), 70)
+  tr <- sp$train; te <- sp$test
 
   specs <- .build_specs(tr, Species ~ ., task = "binary", prob = FALSE, B = 15)
-  bo <- build_ensemble(specs, tr, c(0.34, 0.33, 0.33))
+  bo <- build_ensemble(specs, tr)
 
   pred <- predict(bo, te, specs = specs)
   expect_s3_class(pred, "factor")
@@ -28,12 +27,11 @@ test_that("predict(BootOmegas) does weighted majority vote for binary", {
 
 test_that("predict(BootOmegas) averages probabilities for binary prob", {
   set.seed(2)
-  d  <- iris_binary()
-  d  <- d[sample(nrow(d)), ]
-  tr <- d[1:70, ]; te <- d[71:100, ]
+  sp <- shuffle_split(iris_binary(), 70)
+  tr <- sp$train; te <- sp$test
 
   specs <- .build_specs(tr, Species ~ ., task = "binary", prob = TRUE, B = 15)
-  bo <- build_ensemble(specs, tr, c(0.34, 0.33, 0.33))
+  bo <- build_ensemble(specs, tr)
 
   pred <- predict(bo, te, specs = specs)
   expect_true(is.matrix(pred))
@@ -44,17 +42,17 @@ test_that("predict(BootOmegas) averages probabilities for binary prob", {
 
 test_that("predict(BootOmegas) handles multiclass vote and probability average", {
   set.seed(3)
-  d  <- iris[sample(nrow(iris)), ]
-  tr <- d[1:110, ]; te <- d[111:150, ]
+  sp <- shuffle_split(iris, 110)
+  tr <- sp$train; te <- sp$test
 
   specs_vote <- .build_specs(tr, Species ~ ., task = "multiclass", prob = FALSE, B = 12)
-  vote <- build_ensemble(specs_vote, tr, c(0.34, 0.33, 0.33))
+  vote <- build_ensemble(specs_vote, tr)
   pv <- predict(vote, te, specs = specs_vote)
   expect_s3_class(pv, "factor")
   expect_length(pv, nrow(te))
 
   specs_prob <- .build_specs(tr, Species ~ ., task = "multiclass", prob = TRUE, B = 12)
-  prob <- build_ensemble(specs_prob, tr, c(0.34, 0.33, 0.33))
+  prob <- build_ensemble(specs_prob, tr)
   pp <- predict(prob, te, specs = specs_prob)
   expect_true(is.matrix(pp))
   expect_equal(dim(pp), c(nrow(te), 3))
@@ -68,10 +66,10 @@ test_that("predict(BootOmegas) does a weighted mean for regression", {
 
   specs <- .build_specs(
     tr, mpg ~ ., task = "regression", B = 15,
-    lambdaMetric = yardstick::rmse,
-    omegaMetric  = yardstick::rmse
+    lambdaMetric = .metric_rmse,
+    omegaMetric  = .metric_rmse
   )
-  bo <- build_ensemble(specs, tr, c(0.34, 0.33, 0.33))
+  bo <- build_ensemble(specs, tr)
 
   pred <- predict(bo, te, specs = specs)
   expect_type(pred, "double")
@@ -82,7 +80,7 @@ test_that("predict(BootOmegas) guards bad newdata", {
   d <- iris_binary()
   specs <- .build_specs(d, Species ~ Sepal.Length + Sepal.Width,
                         task = "binary", prob = FALSE, B = 10)
-  bo <- build_ensemble(specs, d, c(0.34, 0.33, 0.33))
+  bo <- build_ensemble(specs, d)
 
   expect_error(predict(bo, iris[0, ], specs = specs), "non-empty data.frame")
   expect_error(predict(bo, iris["Petal.Length"], specs = specs), "missing predictor")
