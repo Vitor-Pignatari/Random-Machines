@@ -84,7 +84,7 @@
   l / total
 }
 
-#' Default (metric-direction-aware) weight functions for a task/prob cell
+#' Default (metric direction aware) weight functions for a task/prob cell
 #'
 #' The selection grid, as a plain lookup (default resolution is eager, so this
 #' feeds `.build_specs()` before the spec is constructed). Each cell pairs a
@@ -145,7 +145,7 @@ inv_logit_weights <- function(x) {
 
 #' Softmax weights (minimize-oriented, sd-standardized)
 #'
-#' `exp(-beta * x / sd(x))`: the weight kernel of Eqs. (1)-(2) in Ara, Maia,
+#' `exp(-beta * x / sd(x))`: the weight function of Eqs. (1)-(2) in Ara, Maia,
 #' Louzada & Macedo (2022) <doi:10.1016/j.eswa.2022.117107>, for a minimize
 #' metric (lower is better, e.g. RMSE). The metric vector is divided by its
 #' standard deviation before the exponential, so the weights are invariant to

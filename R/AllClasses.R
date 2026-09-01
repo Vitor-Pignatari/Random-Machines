@@ -50,8 +50,6 @@ setClass(
     # The slot is "ANY" (not "function") so a user may also pass a callable that
     # is not a bare closure; validity checks that it evaluates.
     lambdaMetric   = "ANY",
-    # Weight/probability functions are pure transforms; the pipeline
-    # (lambdaCalc/omegaCalc) projects their output onto the simplex.
     # `*Args` carry pre-bound arguments (e.g. a softmax `beta`), mirroring the
     # splitfun/splitargs and bootFun/bootArgs pattern.
     lambdaFunction = "function",
@@ -163,9 +161,9 @@ ArgSpecsReg <- function(){
   return(specs)
 }
 
-# Validity is split across the class lattice: task-agnostic checks
-# live on ArgSpecs; the response-class check on ArgSpecsClassif / ArgSpecsReg;
-# and the metric smoke-test (which depends on the prediction shape) on
+# Validity is split across the class set: task-agnostic checks
+# live on ArgSpecs; the response class check on ArgSpecsClassif / ArgSpecsReg;
+# and the metric smoke test (which depends on the prediction shape) on
 # ArgSpecsClassifHard / ArgSpecsClassifProb / ArgSpecsReg. S4 runs the validity
 # of a class *and* all its superclasses, so every concrete spec gets the shared
 # checks plus its own. Helpers: see validity.R and weights.R.
@@ -187,11 +185,9 @@ setValidity(Class = "ArgSpecs", function(object) {
     return("'formula' is not compatible with 'data'")
   }
 
-  ## lambda/omega functions are PURE transforms now: the pipeline
-  ## (lambdaCalc/omegaCalc) projects their output onto the simplex,
-  ## so we no longer require the function itself to sum to 1. We check each
-  ## evaluates (with its pre-bound args) to a numeric vector of the right length,
-  ## and, when both the metric and the function expose a direction, that they
+  ## We check each passed function evaluates (with its pre-bound args) to 
+  ## a numeric vector of the right length, and, 
+  ## when both the metric and the function expose a direction, that they
   ## agree in orientation (a minimize metric needs a decreasing weight fn).
   probe <- seq_len(50) / 51
   for (stg in c("lambda", "omega")) {
@@ -238,7 +234,8 @@ setValidity(Class = "ArgSpecsClassif", function(object) {
 ## Hard classification: metrics must evaluate on hard classes (factor truth,
 ## factor estimate), e.g. accuracy.
 setValidity(Class = "ArgSpecsClassifHard", function(object) {
-  truth <- as.factor(c(1, 2, 1, 2)); estimate <- as.factor(c(1, 2, 2, 2))
+  truth <- as.factor(c(1, 2, 1, 2))
+  estimate <- as.factor(c(1, 2, 2, 2))
   chk <- .check_metric_eval(object@lambdaMetric, truth, estimate, "lambdaMetric")
   if (!isTRUE(chk)) return(chk)
   chk <- .check_metric_eval(object@omegaMetric, truth, estimate, "omegaMetric")
