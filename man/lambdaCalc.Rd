@@ -25,7 +25,7 @@ projects the result onto the probability simplex (sums to 1).
 }
 \section{Methods (by class)}{
 \itemize{
-\item \code{lambdaCalc(ArgSpecs)}: min-max scale -> \code{lambdaFunction} -> simplex (sums to 1).
+\item \code{lambdaCalc(ArgSpecs)}: \code{lambdaFunction} -> simplex (sums to 1).
 
 }}
 \keyword{internal}

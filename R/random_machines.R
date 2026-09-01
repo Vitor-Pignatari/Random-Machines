@@ -11,7 +11,9 @@
 #'   and the `lambdaMetric` / `lambdaFunction` / `lambdaArgs` / `omegaMetric` /
 #'   `omegaFunction` / `omegaArgs` overrides. See the source of `.build_specs()`
 #'   for defaults.
-#' @param K number of cross-validation folds for the kernel-lambda stage.
+#' @param K resampling for the kernel-lambda stage. The default `1` validates
+#'   each kernel on a single stratified 75/25 holdout split, as described in
+#'   Ara et al. (2021, 2022); `K > 1` switches to K-fold cross-validation.
 #' @param store.cv.models keep the per-fold CV models in the fitted object?
 #'   `FALSE` (default) discards them (they are diagnostic only; prediction uses
 #'   the bootstrap models), keeping the object small.
@@ -26,7 +28,7 @@
 #' rm   <- random_machines(iris, formula = Species ~ ., task = "multiclass")
 #' pred <- predict(rm, iris)
 #' }
-random_machines <- function(..., K = 5, store.cv.models = FALSE) {
+random_machines <- function(..., K = 1, store.cv.models = FALSE) {
   specs <- .build_specs(...)
   RandomMachines(specs, K = K, store.cv.models = store.cv.models)
 }
@@ -44,15 +46,21 @@ random_machines <- function(..., K = 5, store.cv.models = FALSE) {
 #' @param task task to be performed: 'binary', 'multiclass' or 'regression'
 #' @param prob TRUE for a probabilistic model; default: FALSE
 #' @param implementation backend; 'kernlab' is the only one available for now
-#' @param kernels character identifiers for the kernels listed under 'args'
-#' @param args list of arguments passed to kernlab's 'ksvm' per kernel
+#' @param kernels character identifiers for the kernels listed under 'args'.
+#'   The default is the four-kernel set of Ara et al. (2021, 2022): gaussian
+#'   (`"rbf"`), laplacian (`"laplace"`), degree-2 polynomial (`"poly2"`) and
+#'   linear (`"linear"`).
+#' @param args list of arguments passed to kernlab's 'ksvm' per kernel. The
+#'   defaults follow the papers' setup: `C = 1`, `epsilon = 0.1`, and kernel
+#'   hyperparameters `sigma = 1` (rbf/laplace) and `degree = 2, scale = 1,
+#'   offset = 0` (poly2).
 #' @param B number of bootstrap models
 #' @param lambdaMetric metric used to score kernels in the lambda stage, as a
 #'   `function(truth, estimate)` returning a single finite numeric. `NULL`
 #'   (default) selects the built-in metric for the task: accuracy (hard
 #'   classification), Brier score (probabilistic classification) or RMSE
 #'   (regression). A supplied metric is validated at construction.
-#' @param lambdaFunction pure transform mapping (min-max scaled) kernel metrics
+#' @param lambdaFunction pure transform mapping kernel metrics
 #'   to raw lambda weights. `NULL` (default) selects the orientation-matching
 #'   grid default: [logit_weights()] (hard classification), [inv_logit_weights()]
 #'   (probabilistic classification) or [softmax_weights()] (regression).
@@ -60,7 +68,7 @@ random_machines <- function(..., K = 5, store.cv.models = FALSE) {
 #'   `list(beta = 2)` for [softmax_weights()]); default `list()`.
 #' @param omegaMetric metric used to score models in the omega stage; `NULL`
 #'   (default) uses the same grid as `lambdaMetric`.
-#' @param omegaFunction pure transform mapping (min-max scaled) model metrics to
+#' @param omegaFunction pure transform mapping model metrics to
 #'   raw omega weights. `NULL` (default) selects the grid default:
 #'   [inv_sq_gap_weights()] (hard classification), [inv_sq_weights()]
 #'   (probabilistic classification) or [softmax_weights()] (regression).
@@ -74,12 +82,12 @@ random_machines <- function(..., K = 5, store.cv.models = FALSE) {
 #' @importFrom methods new is
 #' @importFrom stats model.frame
 #' @noRd
-.build_specs <- function(data           = iris,
-                         formula        = Species ~ .,
+.build_specs <- function(data,
+                         formula,
                          task           = c("binary", "multiclass", "regression"),
                          prob           = FALSE,
                          implementation = "kernlab",
-                         kernels        = c("rbf", "laplace", "polydot"),
+                         kernels        = c("rbf", "laplace", "poly2", "linear"),
                          args           = list(
                            "rbf" = list(
                              C = 1,
@@ -88,13 +96,18 @@ random_machines <- function(..., K = 5, store.cv.models = FALSE) {
                            ),
                            "laplace" = list(
                              C = 1,
-                             epsilon = 0.01,
+                             epsilon = 0.1,
                              kernel = kernlab::laplacedot(sigma = 1)
                            ),
-                           "polydot" = list(
+                           "poly2" = list(
                              C = 1,
-                             epsilon = 0.01,
-                             kernel = kernlab::polydot(degree = 1, scale = 1)
+                             epsilon = 0.1,
+                             kernel = kernlab::polydot(degree = 2, scale = 1, offset = 0)
+                           ),
+                           "linear" = list(
+                             C = 1,
+                             epsilon = 0.1,
+                             kernel = kernlab::vanilladot()
                            )
                          ),
                          B              = 100L,

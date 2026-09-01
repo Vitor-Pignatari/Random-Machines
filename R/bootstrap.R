@@ -17,7 +17,7 @@
 #'
 simple_bs <- function(indexes, B) {
   
-  if(class(indexes) != "integer"){
+  if(!is.integer(indexes)){
     stop("Argument 'indexes' must be of class 'integer'", call. = FALSE)  
   }
   

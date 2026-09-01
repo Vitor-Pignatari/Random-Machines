@@ -21,8 +21,10 @@ svmFit(samples, specs, svmcalls, metric_function, ...)
 
 \item{metric_function}{metric applied to (truth, hard prediction)}
 
-\item{...}{extra arguments; the \code{BootSamples} method requires \code{indexes}, the
-length-B vector of lambda-sampled kernel indices (one per replicate)}
+\item{...}{extra arguments passed to the methods}
+
+\item{indexes}{(\code{BootSamples} method only) the length-B vector of
+lambda-sampled kernel indices, one per bootstrap replicate}
 }
 \value{
 per-kernel list of \code{list(fit, predict, metrics)} (\code{KernelSamples}), or

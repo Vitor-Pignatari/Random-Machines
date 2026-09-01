@@ -1,7 +1,4 @@
-# svmFit() dispatches the two fitting strategies on the resample object
-# (Decision E): KernelSamples -> every kernel over every CV fold; BootSamples ->
-# one lambda-sampled kernel per bootstrap replicate. Exercise both.
-
+# svmFit() dispatches the two fitting strategies on the resample objects
 test_that("svmFit(KernelSamples) fits every kernel across every fold", {
   iris_bin <- iris_binary()
   specs    <- .build_specs(iris_bin, Species ~ ., task = "binary", B = 10)
@@ -30,8 +27,9 @@ test_that("svmFit(BootSamples) fits one kernel per bootstrap replicate", {
     bootArgs  = list(indexes = seq_len(nrow(data)), B = specs@B)
   )
 
-  idx  <- sample(seq_along(svmcalls), prob = c(.32, .21, .47),
-                 replace = TRUE, size = specs@B)
+  probs <- seq_along(svmcalls) / sum(seq_along(svmcalls))
+  idx   <- sample(seq_along(svmcalls), prob = probs,
+                  replace = TRUE, size = specs@B)
   reps <- svmFit(boot, specs, svmcalls, specs@omegaMetric, indexes = idx)
 
   expect_named(reps, c("fit", "predict", "metrics"))

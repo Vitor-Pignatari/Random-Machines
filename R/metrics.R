@@ -4,9 +4,9 @@
 ## where `estimate` matches the task's prediction shape:
 ##   * regression            -> numeric vector
 ##   * hard classification   -> class factor
-##   * probabilistic classif -> n x k class-probability matrix (class-named cols)
+##   * probabilistic classification -> n x k class-probability matrix (class-named cols)
 ## The defaults below are the package's own implementations; a user may pass any
-## function honouring that contract (validated at construction, see
+## function satisfying those conditions (validated at construction, see
 ## `.check_metric_eval()` in validity.R). Each default carries a `direction`
 ## attribute ("maximize"/"minimize") so validity can check it agrees in
 ## orientation with its paired weight function; a bare user function without one

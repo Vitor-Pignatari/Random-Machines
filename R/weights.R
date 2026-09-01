@@ -2,11 +2,16 @@
 ##
 ## The exported functions here are pure transforms: they map a metric vector to a
 ## raw weight vector, with only `eps` domain guards, and do no normalization.
-## All scaling is the pipeline's job (see `lambdaCalc()` / `omegaCalc()`):
+## Final normalization is the pipeline's job (see `lambdaCalc()` / `omegaCalc()`):
 ##
-##   metrics --.minmax()--> f(., args) --.to_simplex() (lambda) / .minmax() (omega)
+##   metrics --> f(., args) --> .to_simplex()   (both stages)
 ##
-## Orientation convention (metrics are min-max scaled but NOT flipped, so the best
+## Metrics reach the transforms on their natural scale: the classification
+## metrics (accuracy, Brier) live in [0, 1] by construction, and the regression
+## default `softmax_weights()` sd-standardizes its input internally (Ara et al.
+## 2022, Eq. (1)).
+##
+## Orientation convention (metrics are NOT flipped, so the best
 ## model sits at x = 1 for a maximize metric and at x = 0 for a minimize metric):
 ##   * maximize-oriented functions are INCREASING in x  (best at x = 1)
 ##   * minimize-oriented functions are DECREASING in x  (best at x = 0)
@@ -56,34 +61,22 @@
 
 # ---- Normalization pipeline helpers ----------------------------------------
 
-#' Min-max scale a numeric vector into `[0, 1]`
-#'
-#' Maps `min -> 0`, `max -> 1`. A degenerate (all-equal) input has no spread to
-#' scale, so it returns a constant `0.5`: mid-interval and clear of the poles of
-#' the inverse weight transforms.
-#'
-#' @param x numeric vector
-#' @return numeric vector in `[0, 1]` (or all `0.5` when `x` is constant)
-#' @noRd
-.minmax <- function(x) {
-  rng <- range(x)
-  if (diff(rng) == 0) return(rep(0.5, length(x)))
-  (x - rng[1]) / (rng[2] - rng[1])
-}
-
 #' Project a raw weight vector onto the probability simplex (sums to 1)
 #'
-#' Shifts the vector so its minimum is non-negative, then divides by the sum.
-#' Falls back to uniform weights when nothing positive remains. This is the
-#' lambda-stage post-normalization (the hard "probabilities sum to 1" rule),
-#' lifted out of the individual score functions.
+#' Zeroes negative entries, then divides by the sum. A negative raw weight
+#' means "worse than chance" under every built-in transform (e.g. a
+#' below-0.5-accuracy kernel through [logit_weights()]), and Eq. (8) of Ara
+#' et al. (2021) wants such a kernel selected with probability next to zero
+#' while the remaining kernels keep their relative weights. Falls back to
+#' uniform weights when nothing positive remains. This is the shared
+#' post-normalization of the lambda and omega stages (the hard "sums to 1"
+#' rule), lifted out of the individual score functions.
 #'
 #' @param l numeric vector of raw weights (any sign)
 #' @return numeric vector of the same length summing to 1
 #' @noRd
 .to_simplex <- function(l) {
-  l_min <- min(l)
-  if (l_min < 0) l <- l - l_min
+  l[l < 0] <- 0
   total <- sum(l)
   if (!is.finite(total) || total == 0) {
     return(rep(1 / length(l), length(l)))
@@ -118,11 +111,11 @@
 #' Logit weights (maximize-oriented)
 #'
 #' Shifted-logit transform for scores in `(0, 1)` where higher is better (e.g.
-#' accuracy). Increasing in `x`. Applies no normalization: the lambda stage
-#' projects the result onto the simplex and the omega stage min-max scales it
-#' (see [omegaCalc()]). `x` is `eps`-clamped into `(0, 1)` as a domain guard.
+#' accuracy). Increasing in `x`. Applies no normalization: the lambda and omega
+#' stages project the result onto the simplex (see [lambdaCalc()] /
+#' [omegaCalc()]). `x` is `eps`-clamped into `(0, 1)` as a domain guard.
 #'
-#' @param x numeric vector of min-max-scaled scores in `[0, 1]`
+#' @param x numeric vector of scores in `[0, 1]` (e.g. accuracy, Brier)
 #' @return a raw numeric weight vector (not normalized)
 #' @export
 #' @examples
@@ -139,7 +132,7 @@ logit_weights <- function(x) {
 #' lower is better (e.g. a Brier score). Decreasing in `x`: a low score maps to a
 #' high weight. Applies no normalization; `x` is `eps`-clamped as a domain guard.
 #'
-#' @param x numeric vector of min-max-scaled scores in `[0, 1]`
+#' @param x numeric vector of scores in `[0, 1]` (e.g. accuracy, Brier)
 #' @return a raw numeric weight vector (not normalized)
 #' @export
 #' @examples
@@ -150,22 +143,29 @@ inv_logit_weights <- function(x) {
   log((1 - x) / x)
 }
 
-#' Softmax weights (minimize-oriented, tempered)
+#' Softmax weights (minimize-oriented, sd-standardized)
 #'
-#' `exp(-beta * x)`: a Boltzmann/softmax kernel for a minimize metric (lower is
-#' better, e.g. RMSE). Decreasing in `x` for `beta > 0`; `beta` tempers how
-#' sharply weight concentrates on the best models. Expects its input already
-#' min-max scaled (the pipeline does this) and applies no normalization.
+#' `exp(-beta * x / sd(x))`: the weight kernel of Eqs. (1)-(2) in Ara, Maia,
+#' Louzada & Macedo (2022) <doi:10.1016/j.eswa.2022.117107>, for a minimize
+#' metric (lower is better, e.g. RMSE). The metric vector is divided by its
+#' standard deviation before the exponential, so the weights are invariant to
+#' the scale of the response. Decreasing in `x` for `beta > 0`; `beta` (the
+#' paper's correlation parameter) tempers how sharply weight concentrates on
+#' the best models. Applies no normalization: the pipeline projects the result
+#' onto the simplex. A degenerate spread (sd zero or undefined) skips the
+#' standardization, so equal metrics yield equal, finite weights.
 #'
-#' @param x numeric vector of min-max-scaled error metrics in `[0, 1]`
+#' @param x numeric vector of error metrics (raw scale; lower is better)
 #' @param beta positive temperature; larger `beta` sharpens the weighting.
-#'   Default `0.5`.
+#'   Default `2`, the paper's default.
 #' @return a raw numeric weight vector (not normalized)
 #' @export
 #' @examples
-#' softmax_weights(c(0.1, 0.4, 0.9), beta = 0.5)
-softmax_weights <- function(x, beta = 0.5) {
-  exp(-beta * x)
+#' softmax_weights(c(3.2, 3.5, 4.0, 5.0))
+softmax_weights <- function(x, beta = 2) {
+  s <- stats::sd(x)
+  if (!is.finite(s) || s == 0) s <- 1
+  exp(-beta * x / s)
 }
 
 #' Inverse-squared-gap weights (maximize-oriented)
@@ -174,7 +174,7 @@ softmax_weights <- function(x, beta = 0.5) {
 #' (highest score) dominates. Maximize-oriented, increasing in `x`. Applies no
 #' normalization; `x` is `eps`-clamped below 1 so a perfect score stays finite.
 #'
-#' @param x numeric vector of min-max-scaled scores in `[0, 1]`
+#' @param x numeric vector of scores in `[0, 1]` (e.g. accuracy, Brier)
 #' @return a finite, positive raw numeric weight vector (not normalized)
 #' @export
 #' @examples
@@ -192,7 +192,7 @@ inv_sq_gap_weights <- function(x) {
 #' normalization; `x` is `eps`-clamped above 0 so a perfect (zero) score stays
 #' finite.
 #'
-#' @param x numeric vector of min-max-scaled error metrics in `[0, 1]`
+#' @param x numeric vector of error metrics in `[0, 1]` (e.g. Brier)
 #' @return a finite, positive raw numeric weight vector (not normalized)
 #' @export
 #' @examples
@@ -209,7 +209,7 @@ inv_sq_weights <- function(x) {
 #'
 #' Coerces any non-finite or negative entries to 0, then scales the vector to
 #' sum to 1. When nothing positive remains (total is 0), falls back to uniform
-#' weights. The omega stage already min-max scales its output, so at predict this
+#' weights. The omega stage already projects onto the simplex, so at predict this
 #' is a defensive normaliser that turns the stored omegas into the actual sum=1
 #' voting weights (and rescues a misbehaving user-supplied omega function).
 #'

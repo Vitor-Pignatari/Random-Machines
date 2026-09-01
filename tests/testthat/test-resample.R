@@ -41,6 +41,31 @@ test_that("kfold_cv holdout mode (K = 1) makes a single stratified split", {
   expect_true(all(abs(per_class - 0.8) < 0.05))  # each class ~80% in training
 })
 
+# ---- Constructor wrappers over the split functions --------------------------
+
+test_that("KernelSamples wraps a kfold_cv split", {
+  ks <- KernelSamples(
+    splitfun  = kfold_cv,
+    splitargs = list(n = nrow(iris), K = 4, y = iris$Species)
+  )
+  expect_s4_class(ks, "KernelSamples")
+  expect_named(ks@data, c("train", "test"))
+})
+
+test_that("BootSamples wraps simple_bs and rejects non-integer indexes", {
+  bs <- BootSamples(trainData = iris,
+                    bootArgs  = list(indexes = seq_len(nrow(iris)), B = 20))
+  expect_s4_class(bs, "BootSamples")
+  expect_equal(dim(bs@bootData$train), c(nrow(iris), 20))
+  expect_equal(dim(bs@bootData$test),  c(nrow(iris), 20))
+
+  expect_error(
+    BootSamples(trainData = iris,
+                bootArgs  = list(indexes = rownames(iris), B = 20)),
+    "Argument 'indexes' must be of class 'integer'"
+  )
+})
+
 test_that("simple_bs returns bootstrap index + OOB matrices", {
   set.seed(1)
   B <- 15; n <- nrow(iris)

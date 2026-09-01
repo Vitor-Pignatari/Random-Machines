@@ -3,3 +3,10 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^\.claude$
+^\.remember$
+^ARCHITECTURE\.md$
+^tmp$
+^refresh\.R$
+^LICENSE\.md$
+^docs$
+^codecov\.yml$

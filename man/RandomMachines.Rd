@@ -4,12 +4,14 @@
 \alias{RandomMachines}
 \title{RandomMachines ensemble constructor}
 \usage{
-RandomMachines(specs, K = 5, store.cv.models = FALSE)
+RandomMachines(specs, K = 1, store.cv.models = FALSE)
 }
 \arguments{
 \item{specs}{an ArgSpecs object (from \code{\link[=random_machines]{random_machines()}}).}
 
-\item{K}{number of cross-validation folds for the kernel-lambda stage.}
+\item{K}{resampling for the kernel-lambda stage: \code{1} (default) validates
+each kernel on a single stratified 75/25 holdout split (the papers'
+Algorithm 1); \code{K > 1} switches to K-fold cross-validation.}
 
 \item{store.cv.models}{keep the per-fold CV models in
 \code{kernelLambdas@kernelModels}? \code{FALSE} (default) discards them (they are
@@ -26,6 +28,6 @@ built by \code{\link[=random_machines]{random_machines()}}.
 \examples{
 \dontrun{
 specs <- randomMachines:::.build_specs(iris, Species ~ ., task = "multiclass")
-RandomMachines(specs, K = 5)
+RandomMachines(specs)
 }
 }

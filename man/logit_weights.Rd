@@ -7,16 +7,16 @@
 logit_weights(x)
 }
 \arguments{
-\item{x}{numeric vector of min-max-scaled scores in \verb{[0, 1]}}
+\item{x}{numeric vector of scores in \verb{[0, 1]} (e.g. accuracy, Brier)}
 }
 \value{
 a raw numeric weight vector (not normalized)
 }
 \description{
 Shifted-logit transform for scores in \verb{(0, 1)} where higher is better (e.g.
-accuracy). Increasing in \code{x}. Applies no normalization: the lambda stage
-projects the result onto the simplex and the omega stage min-max scales it
-(see \code{\link[=omegaCalc]{omegaCalc()}}). \code{x} is \code{eps}-clamped into \verb{(0, 1)} as a domain guard.
+accuracy). Increasing in \code{x}. Applies no normalization: the lambda and omega
+stages project the result onto the simplex (see \code{\link[=lambdaCalc]{lambdaCalc()}} /
+\code{\link[=omegaCalc]{omegaCalc()}}). \code{x} is \code{eps}-clamped into \verb{(0, 1)} as a domain guard.
 }
 \examples{
 logit_weights(c(0.6, 0.8, 0.95))

@@ -2,8 +2,9 @@
 
 `randomMachines` fits a weighted ensemble of kernel SVMs in **two stages**:
 
-1. **Kernel lambdas.** Cross-validate every candidate kernel and turn its mean
-   out-of-fold performance into a *selection probability* (λ).
+1. **Kernel lambdas.** Validate every candidate kernel on held-out data (a
+   single stratified 75/25 holdout by default, K-fold cross-validation via `K`)
+   and turn its mean held-out performance into a *selection probability* (λ).
 2. **Bootstrap omegas.** Draw `B` bootstrap replicates, fit a λ-sampled kernel on
    each, and weight the models by their out-of-bag performance (ω).
 
@@ -153,10 +154,10 @@ flowchart TD
 
   subgraph S1["Stage 1 : kernel lambdas (λ)"]
     direction TB
-    KS["KernelSamples(kfold_cv) : K stratified CV folds"]
-    KS --> FIT1["svmFit(KernelSamples) : every kernel × every fold"]
-    FIT1 --> M1["mean out-of-fold metric per kernel"]
-    M1 --> LAM["lambdaCalc(specs, metrics) : min-max → lambdaFunction → simplex (Σ=1)"]
+    KS["KernelSamples(kfold_cv) : holdout split (K = 1, default) or K CV folds"]
+    KS --> FIT1["svmFit(KernelSamples) : every kernel × every split"]
+    FIT1 --> M1["mean held-out metric per kernel"]
+    M1 --> LAM["lambdaCalc(specs, metrics) : lambdaFunction → simplex (Σ=1)"]
     LAM --> KL["KernelLambdas"]
   end
 
@@ -166,7 +167,7 @@ flowchart TD
     BS --> DRAW["sample B kernels ~ λ"]
     DRAW --> FIT2["svmFit(BootSamples) : one λ-sampled kernel per replicate"]
     FIT2 --> M2["out-of-bag metric per model"]
-    M2 --> OM["omegaCalc(specs, metrics) : min-max → omegaFunction → min-max [0,1]"]
+    M2 --> OM["omegaCalc(specs, metrics) : omegaFunction → simplex (Σ=1)"]
     OM --> BO["BootOmegas : fitted models + ω"]
   end
 
@@ -184,21 +185,24 @@ resample object they dispatch on.
 **The normalization pipeline.** The weight and probability functions
 (`logit_weights`, `inv_logit_weights`, `softmax_weights`, `inv_sq_gap_weights`,
 `inv_sq_weights`) are **pure transforms** with only `eps` domain guards; they do no
-normalization. All scaling lives in `lambdaCalc()` and `omegaCalc()`:
+normalization. Final normalization lives in `lambdaCalc()` and `omegaCalc()`:
 
-- **both stages** min-max scale the raw metrics before the transform;
-- **lambda** projects the transform's output onto the probability simplex (Σ=1, the
-  hard sampling-weight rule);
-- **omega** min-max scales the output to `[0, 1]` (a comparable share; the final Σ=1
-  voting weights form at predict time via `.normalize_weights`).
+- metrics reach the transforms on their **natural scale**: the classification
+  metrics (accuracy, Brier) live in `[0, 1]` by construction, and the regression
+  default `softmax_weights` sd-standardizes its input internally
+  (`exp(-beta * x / sd(x))`, Eqs. (1)-(2) of Ara, Maia, Louzada & Macêdo 2022,
+  the regression random machines paper; default `beta = 2`, the paper's);
+- **both stages** project the transform's output onto the probability simplex
+  (Σ=1: the hard sampling-weight rule for lambda, the paper's Eq. (2) shape for
+  omega; predict-time `.normalize_weights` is then a defensive no-op).
 
 A **metric** is any `function(truth, estimate)` returning a single finite numeric
 (estimate is a numeric vector, class factor, or probability matrix by task). The
 defaults, accuracy, RMSE and Brier, are **built into the package** with no external
 metrics dependency; a user may pass any function honouring that contract, checked
-at construction. Metrics are min-max scaled *without flipping*, so a **minimize**
-metric (RMSE, Brier) puts the best model at `x = 0` and a **maximize** metric
-(accuracy) at `x = 1`. Each metric is therefore paired with an orientation-matching
+at construction. Metrics are *not flipped*, so a **minimize**
+metric (RMSE, Brier) puts the best model at low `x` and a **maximize** metric
+(accuracy) at high `x`. Each metric is therefore paired with an orientation-matching
 function (minimize with decreasing, maximize with increasing); validity rejects a
 mismatched pair. `beta` for `softmax_weights` is carried in `lambdaArgs` and
 `omegaArgs` and may differ between the two stages. Setting `store.cv.models = TRUE`
@@ -240,7 +244,7 @@ class name**, so models trained on different resamples combine correctly.
 | `ArgSpecsBinary` / `ArgSpecsMultiClass` | (none) | Concrete hard-classification leaves |
 | `ArgSpecsBinaryProb` / `ArgSpecsMultiClassProb` | (none) | Concrete probabilistic-classification leaves |
 | `ArgSpecsReg` | (none) | Concrete regression leaf |
-| `KernelSamples` | `data` (CV split), `splitfun`, `splitargs` | Stage-1 cross-validation folds |
+| `KernelSamples` | `data` (holdout/CV split), `splitfun`, `splitargs` | Stage-1 validation split(s) |
 | `KernelLambdas` | `kernelMetrics`, `kernelLambdas`, `kernelModels` | Stage-1 kernel probabilities (λ) |
 | `BootSamples` | `bootData` (train/OOB indices), `bootFun`, `bootArgs` | Stage-2 bootstrap resamples |
 | `BootOmegas` | `bootModels`, `bootMetrics`, `bootOmegas` | Stage-2 fitted models and weights (ω) |

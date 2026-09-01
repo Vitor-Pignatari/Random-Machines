@@ -1,7 +1,9 @@
-# Full-pipeline tests: random_machines() -> RandomMachines() -> predict()
-# for each task (binary / multiclass / regression), in vote and prob modes.
+# Object-assembly tests for the RandomMachines orchestrator: the fitted object
+# carries every pipeline stage, and task-aware defaults resolve correctly.
+# Per-task output contracts and predictive skill live in test-e2e.R; the
+# prob/multiclass prediction shapes in test-predict-methods.R.
 
-test_that("full pipeline: binary majority vote", {
+test_that("the fitted object assembles every pipeline stage (binary vote)", {
   set.seed(101)
   sp <- shuffle_split(iris_binary(), 70)
   tr <- sp$train; te <- sp$test
@@ -28,45 +30,7 @@ test_that("full pipeline: binary majority vote", {
   expect_gt(mean(pred == te$Species), 0.8)   # setosa/versicolor is easy
 })
 
-test_that("full pipeline: binary probability average", {
-  set.seed(102)
-  sp <- shuffle_split(iris_binary(), 70)
-  tr <- sp$train; te <- sp$test
-
-  rm <- random_machines(tr, Species ~ ., task = "binary", prob = TRUE, B = 15, K = 5)
-
-  pred <- predict(rm, te)
-  expect_true(is.matrix(pred))
-  expect_equal(dim(pred), c(nrow(te), 2))
-})
-
-test_that("full pipeline: multiclass majority vote", {
-  set.seed(103)
-  sp <- shuffle_split(iris, 110)
-  tr <- sp$train; te <- sp$test
-
-  rm <- random_machines(tr, Species ~ ., task = "multiclass", prob = FALSE, B = 12, K = 5)
-
-  pred <- predict(rm, te)
-  expect_s3_class(pred, "factor")
-  expect_length(pred, nrow(te))
-  expect_setequal(levels(pred), levels(tr$Species))
-  expect_gt(mean(pred == te$Species), 0.7)
-})
-
-test_that("full pipeline: multiclass probability average", {
-  set.seed(104)
-  sp <- shuffle_split(iris, 110)
-  tr <- sp$train; te <- sp$test
-
-  rm <- random_machines(tr, Species ~ ., task = "multiclass", prob = TRUE, B = 12, K = 5)
-
-  pred <- predict(rm, te)
-  expect_true(is.matrix(pred))
-  expect_equal(dim(pred), c(nrow(te), 3))
-})
-
-test_that("full pipeline: regression (task-aware defaults)", {
+test_that("regression resolves task-aware defaults and fits end to end", {
   set.seed(105)
   sp <- shuffle_split(mtcars, 24)
   tr <- sp$train; te <- sp$test

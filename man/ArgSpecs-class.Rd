@@ -32,8 +32,8 @@ task subclasses: \code{ArgSpecsBinary}, \code{ArgSpecsMultiClass}, \code{ArgSpec
 \item{\code{lambdaMetric}}{metric \verb{function(truth, estimate)} scoring kernels in the
 lambda stage}
 
-\item{\code{lambdaFunction}}{pure transform mapping (min-max scaled) kernel metrics to
-raw lambda weights; the pipeline projects the result onto the simplex}
+\item{\code{lambdaFunction}}{pure transform mapping kernel metrics to raw lambda
+weights; the pipeline projects the result onto the simplex}
 
 \item{\code{lambdaArgs}}{list of pre-bound arguments for \code{lambdaFunction} (e.g.
 \code{list(beta = 0.5)})}
@@ -41,8 +41,8 @@ raw lambda weights; the pipeline projects the result onto the simplex}
 \item{\code{omegaMetric}}{metric \verb{function(truth, estimate)} scoring models in the
 omega stage}
 
-\item{\code{omegaFunction}}{pure transform mapping (min-max scaled) model metrics to
-raw omega weights; the pipeline min-max scales the result}
+\item{\code{omegaFunction}}{pure transform mapping model metrics to raw omega
+weights; the pipeline projects the result onto the simplex}
 
 \item{\code{omegaArgs}}{list of pre-bound arguments for \code{omegaFunction}}
 }}

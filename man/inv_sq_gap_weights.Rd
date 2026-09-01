@@ -7,7 +7,7 @@
 inv_sq_gap_weights(x)
 }
 \arguments{
-\item{x}{numeric vector of min-max-scaled scores in \verb{[0, 1]}}
+\item{x}{numeric vector of scores in \verb{[0, 1]} (e.g. accuracy, Brier)}
 }
 \value{
 a finite, positive raw numeric weight vector (not normalized)

@@ -25,7 +25,7 @@ voting weights are formed at predict time by \code{.normalize_weights}).
 }
 \section{Methods (by class)}{
 \itemize{
-\item \code{omegaCalc(ArgSpecs)}: min-max scale -> \code{omegaFunction} -> min-max scale to \verb{[0, 1]}.
+\item \code{omegaCalc(ArgSpecs)}: \code{omegaFunction} -> simplex (sums to 1).
 
 }}
 \keyword{internal}

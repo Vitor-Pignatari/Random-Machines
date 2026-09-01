@@ -5,15 +5,15 @@ Authors@R:
     person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
 Description: Fits Random Machines, a support vector machine ensemble that
     draws on several kernel functions rather than committing to one. Fitting
-    runs in two stages. A cross-validation stage scores each candidate kernel
+    runs in two stages. A validation stage (holdout by default, optionally
+    K-fold cross-validation) scores each candidate kernel
     and maps its performance to a selection probability (lambda); a bootstrap
     stage fits one lambda-sampled kernel per resample and weights the fitted
     models by their out-of-bag performance (omega). Prediction aggregates the
     bootstrap models by their weights, yielding a weighted majority vote, an
     averaged class-probability matrix, or a weighted mean for binary,
     multiclass, probabilistic and regression tasks.
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+License: MIT + file LICENSE
 Encoding: UTF-8
 Imports:
     kernlab,

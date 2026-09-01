@@ -18,14 +18,14 @@ NULL
 #' @slot B integer number of bootstrap models
 #' @slot lambdaMetric metric `function(truth, estimate)` scoring kernels in the
 #'   lambda stage
-#' @slot lambdaFunction pure transform mapping (min-max scaled) kernel metrics to
-#'   raw lambda weights; the pipeline projects the result onto the simplex
+#' @slot lambdaFunction pure transform mapping kernel metrics to raw lambda
+#'   weights; the pipeline projects the result onto the simplex
 #' @slot lambdaArgs list of pre-bound arguments for `lambdaFunction` (e.g.
 #'   `list(beta = 0.5)`)
 #' @slot omegaMetric metric `function(truth, estimate)` scoring models in the
 #'   omega stage
-#' @slot omegaFunction pure transform mapping (min-max scaled) model metrics to
-#'   raw omega weights; the pipeline min-max scales the result
+#' @slot omegaFunction pure transform mapping model metrics to raw omega
+#'   weights; the pipeline projects the result onto the simplex
 #' @slot omegaArgs list of pre-bound arguments for `omegaFunction`
 #'
 #' @include resample.R weights.R metrics.R
@@ -51,7 +51,7 @@ setClass(
     # is not a bare closure; validity checks that it evaluates.
     lambdaMetric   = "ANY",
     # Weight/probability functions are pure transforms; the pipeline
-    # (lambdaCalc/omegaCalc) min-max scales the input and normalises the output.
+    # (lambdaCalc/omegaCalc) projects their output onto the simplex.
     # `*Args` carry pre-bound arguments (e.g. a softmax `beta`), mirroring the
     # splitfun/splitargs and bootFun/bootArgs pattern.
     lambdaFunction = "function",
@@ -188,7 +188,7 @@ setValidity(Class = "ArgSpecs", function(object) {
   }
 
   ## lambda/omega functions are PURE transforms now: the pipeline
-  ## (lambdaCalc/omegaCalc) min-max scales the input and normalises the output,
+  ## (lambdaCalc/omegaCalc) projects their output onto the simplex,
   ## so we no longer require the function itself to sum to 1. We check each
   ## evaluates (with its pre-bound args) to a numeric vector of the right length,
   ## and, when both the metric and the function expose a direction, that they
@@ -436,7 +436,7 @@ setValidity(
     
     # bootData must be a list of length 2
     lengthVal <- length(object@bootData) == 2 &
-      class(object@bootData) == "list"
+      is.list(object@bootData)
     
     sizeVal <- nrow(object@bootData[["train"]]) == nrow(object@bootData[["test"]])
     
@@ -604,7 +604,9 @@ setClass(
 #' built by [random_machines()].
 #'
 #' @param specs an ArgSpecs object (from [random_machines()]).
-#' @param K number of cross-validation folds for the kernel-lambda stage.
+#' @param K resampling for the kernel-lambda stage: `1` (default) validates
+#'   each kernel on a single stratified 75/25 holdout split (the papers'
+#'   Algorithm 1); `K > 1` switches to K-fold cross-validation.
 #' @param store.cv.models keep the per-fold CV models in
 #'   `kernelLambdas@kernelModels`? `FALSE` (default) discards them (they are
 #'   diagnostic only; prediction uses the bootstrap models), keeping the fitted
@@ -616,9 +618,9 @@ setClass(
 #' @examples
 #' \dontrun{
 #' specs <- randomMachines:::.build_specs(iris, Species ~ ., task = "multiclass")
-#' RandomMachines(specs, K = 5)
+#' RandomMachines(specs)
 #' }
-RandomMachines <- function(specs, K = 5, store.cv.models = FALSE) {
+RandomMachines <- function(specs, K = 1, store.cv.models = FALSE) {
 
   ## Per-kernel ksvm call templates and the resolved training data are the
   ## inputs every downstream stage shares.
@@ -627,9 +629,10 @@ RandomMachines <- function(specs, K = 5, store.cv.models = FALSE) {
   response <- .response_name(svmcalls[[1]])
 
   ## --- Stage 1: kernel lambdas -----------------------------------------
-  ## Cross-validate every kernel and turn mean out-of-fold performance into
-  ## kernel selection probabilities. Classification folds are stratified on the
-  ## response; regression folds are drawn at random.
+  ## Validate every kernel -- on a single 75/25 holdout split by default
+  ## (K = 1, the papers' Algorithm 1) or across K folds -- and turn mean
+  ## held-out performance into kernel selection probabilities. Classification
+  ## splits are stratified on the response; regression rows are drawn at random.
   strat_y <- if (specs@task %in% c("binary", "multiclass")) data[[response]] else NULL
 
   kernelSamples <- KernelSamples(

@@ -83,8 +83,9 @@ setGeneric("rmAggregate", function(specs, predictions, weights, ...) standardGen
 #' @param specs an ArgSpecs object; drives per-case [svmPredict()] dispatch
 #' @param svmcalls list of ksvm calls from `.call_builder()`
 #' @param metric_function metric applied to (truth, hard prediction)
-#' @param ... extra arguments; the `BootSamples` method requires `indexes`, the
-#'   length-B vector of lambda-sampled kernel indices (one per replicate)
+#' @param ... extra arguments passed to the methods
+#' @param indexes (`BootSamples` method only) the length-B vector of
+#'   lambda-sampled kernel indices, one per bootstrap replicate
 #'
 #' @return per-kernel list of `list(fit, predict, metrics)` (`KernelSamples`), or
 #'   a single such list (`BootSamples`)

@@ -4,7 +4,7 @@
 \alias{random_machines}
 \title{Fit a Random Machines ensemble}
 \usage{
-random_machines(..., K = 5, store.cv.models = FALSE)
+random_machines(..., K = 1, store.cv.models = FALSE)
 }
 \arguments{
 \item{...}{specification arguments forwarded to the internal spec builder:
@@ -13,7 +13,9 @@ and the \code{lambdaMetric} / \code{lambdaFunction} / \code{lambdaArgs} / \code{
 \code{omegaFunction} / \code{omegaArgs} overrides. See the source of \code{.build_specs()}
 for defaults.}
 
-\item{K}{number of cross-validation folds for the kernel-lambda stage.}
+\item{K}{resampling for the kernel-lambda stage. The default \code{1} validates
+each kernel on a single stratified 75/25 holdout split, as described in
+Ara et al. (2021, 2022); \code{K > 1} switches to K-fold cross-validation.}
 
 \item{store.cv.models}{keep the per-fold CV models in the fitted object?
 \code{FALSE} (default) discards them (they are diagnostic only; prediction uses

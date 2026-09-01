@@ -2,25 +2,30 @@
 % Please edit documentation in R/weights.R
 \name{softmax_weights}
 \alias{softmax_weights}
-\title{Softmax weights (minimize-oriented, tempered)}
+\title{Softmax weights (minimize-oriented, sd-standardized)}
 \usage{
-softmax_weights(x, beta = 0.5)
+softmax_weights(x, beta = 2)
 }
 \arguments{
-\item{x}{numeric vector of min-max-scaled error metrics in \verb{[0, 1]}}
+\item{x}{numeric vector of error metrics (raw scale; lower is better)}
 
 \item{beta}{positive temperature; larger \code{beta} sharpens the weighting.
-Default \code{0.5}.}
+Default \code{2}, the paper's default.}
 }
 \value{
 a raw numeric weight vector (not normalized)
 }
 \description{
-\code{exp(-beta * x)}: a Boltzmann/softmax kernel for a minimize metric (lower is
-better, e.g. RMSE). Decreasing in \code{x} for \code{beta > 0}; \code{beta} tempers how
-sharply weight concentrates on the best models. Expects its input already
-min-max scaled (the pipeline does this) and applies no normalization.
+\code{exp(-beta * x / sd(x))}: the weight kernel of Eqs. (1)-(2) in Ara, Maia,
+Louzada & Macedo (2022) \url{doi:10.1016/j.eswa.2022.117107}, for a minimize
+metric (lower is better, e.g. RMSE). The metric vector is divided by its
+standard deviation before the exponential, so the weights are invariant to
+the scale of the response. Decreasing in \code{x} for \code{beta > 0}; \code{beta} (the
+paper's correlation parameter) tempers how sharply weight concentrates on
+the best models. Applies no normalization: the pipeline projects the result
+onto the simplex. A degenerate spread (sd zero or undefined) skips the
+standardization, so equal metrics yield equal, finite weights.
 }
 \examples{
-softmax_weights(c(0.1, 0.4, 0.9), beta = 0.5)
+softmax_weights(c(3.2, 3.5, 4.0, 5.0))
 }

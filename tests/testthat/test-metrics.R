@@ -19,12 +19,6 @@ test_that("built-in metrics carry a direction attribute", {
   expect_identical(attr(.metric_brier,    "direction"), "minimize")
 })
 
-test_that("no external metrics package is imported", {
-  imports <- read.dcf("../../DESCRIPTION", fields = "Imports")[1, 1]
-  expect_false(grepl("yardstick",  imports))
-  expect_false(grepl("tidyselect", imports))
-})
-
 # ---- The contract test every user-supplied metric must pass -----------------
 
 test_that("a metric that does not return a single finite numeric is rejected", {

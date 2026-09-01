@@ -3,8 +3,9 @@
 `randomMachines` fits a weighted ensemble of kernel support vector machines. It
 combines several kernels rather than committing to one, in two stages:
 
-1. **Kernel lambdas.** Cross-validate every candidate kernel and map its mean
-   out-of-fold performance to a selection probability (λ).
+1. **Kernel lambdas.** Validate every candidate kernel on held-out data (a
+   single stratified 75/25 holdout by default, K-fold cross-validation via `K`)
+   and map its mean held-out performance to a selection probability (λ).
 2. **Bootstrap omegas.** Draw `B` bootstrap replicates, fit one λ-sampled kernel
    per replicate, and weight the fitted models by their out-of-bag performance (ω).
 

@@ -7,7 +7,7 @@
 inv_sq_weights(x)
 }
 \arguments{
-\item{x}{numeric vector of min-max-scaled error metrics in \verb{[0, 1]}}
+\item{x}{numeric vector of error metrics in \verb{[0, 1]} (e.g. Brier)}
 }
 \value{
 a finite, positive raw numeric weight vector (not normalized)
