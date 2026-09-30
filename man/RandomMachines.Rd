@@ -4,7 +4,7 @@
 \alias{RandomMachines}
 \title{RandomMachines ensemble constructor}
 \usage{
-RandomMachines(specs, K = 1, store.cv.models = FALSE)
+RandomMachines(specs, K = 1, store.cv.models = FALSE, store.resamples = FALSE)
 }
 \arguments{
 \item{specs}{an ArgSpecs object (from \code{\link[=random_machines]{random_machines()}}).}
@@ -17,6 +17,11 @@ Algorithm 1); \code{K > 1} switches to K-fold cross-validation.}
 \code{kernelLambdas@kernelModels}? \code{FALSE} (default) discards them (they are
 diagnostic only; prediction uses the bootstrap models), keeping the fitted
 object small. Set \code{TRUE} to inspect the stage-1 models.}
+
+\item{store.resamples}{keep the resample matrices (\code{kernelSamples@data} fold
+matrices and \code{bootSamples@bootData} bootstrap index matrices)? \code{FALSE}
+(default) clears them after fitting (they are diagnostic only; prediction
+uses only \code{specs} and \code{bootOmegas}). Set \code{TRUE} to inspect the splits.}
 }
 \value{
 a RandomMachines object.

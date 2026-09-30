@@ -5,10 +5,10 @@
 
 ```{r fit-diagram, results='asis'}
 cat(mermaid('flowchart TD
-  U(["user: random_machines(data, formula, task, prob, K, store.cv.models)"])
+  U(["user: random_machines(data, formula, task, prob, K, store.cv.models, store.resamples)"])
   U --> BUILD[".build_specs() : resolve model frame, grid defaults (metric + pure weight fn)"]
   BUILD --> SPEC["ArgSpecs leaf (Binary / MultiClass / *Prob / Reg)"]
-  SPEC --> ORCH["RandomMachines(specs, K, store.cv.models)"]
+  SPEC --> ORCH["RandomMachines(specs, K, store.cv.models, store.resamples)"]
   ORCH --> CB[".call_builder(specs) : per-kernel ksvm call templates"]
 
   subgraph S1["Stage 1 : kernel lambdas"]
@@ -16,7 +16,7 @@ cat(mermaid('flowchart TD
     KS["KernelSamples(kfold_cv) : K stratified CV folds"]
     KS --> FIT1["svmFit(KernelSamples) : every kernel x every fold"]
     FIT1 --> M1["mean out-of-fold metric per kernel"]
-    M1 --> LAM["lambdaCalc(specs, metrics) : min-max, lambdaFunction, simplex"]
+    M1 --> LAM["lambdaCalc(specs, metrics) : lambdaFunction, simplex"]
     LAM --> KL["KernelLambdas"]
   end
 
@@ -26,7 +26,7 @@ cat(mermaid('flowchart TD
     BS --> DRAW["sample B kernels by lambda"]
     DRAW --> FIT2["svmFit(BootSamples) : one lambda-sampled kernel per replicate"]
     FIT2 --> M2["out-of-bag metric per model"]
-    M2 --> OM["omegaCalc(specs, metrics) : min-max, omegaFunction, min-max"]
+    M2 --> OM["omegaCalc(specs, metrics) : omegaFunction, simplex"]
     OM --> BO["BootOmegas : fitted models + omega"]
   end
 
@@ -46,22 +46,30 @@ The weight/probability functions (`logit_weights`, `inv_logit_weights`,
 with only `eps` domain guards; they do no normalization. All scaling lives in
 `lambdaCalc()` / `omegaCalc()`:
 
-- **both stages** min-max scale the raw metrics before the transform;
-- **lambda** projects the transform's output onto the probability simplex (Σ = 1,
-  the hard sampling-weight rule);
-- **omega** min-max scales the output to `[0, 1]` (a comparable share; the final
-  Σ = 1 voting weights form at predict time via `.normalize_weights`).
+- metrics reach the transforms on their **natural scale**: the classification
+  metrics (accuracy, Brier) live in `[0, 1]` by construction, and the regression
+  default `softmax_weights` sd-standardizes its input internally;
+- **both stages** project the transform's output onto the probability simplex
+  (Σ = 1: the hard sampling-weight rule for lambda, the paper's Eq. (2) shape
+  for omega; the predict-time `.to_simplex` renormalization is then a
+  defensive no-op).
 
 A **metric** is any `function(truth, estimate)` returning a single finite numeric
 (estimate = numeric vector / class factor / probability matrix by task). The
 defaults, accuracy, RMSE and Brier, are **built into the package** (no external
 metrics dependency); a user may pass any function honouring that contract, checked
-at construction. Metrics are min-max scaled *without flipping*, so a **minimize**
-metric (RMSE, Brier) puts the best model at `x = 0` and a **maximize** metric
-(accuracy) at `x = 1`. Each metric is therefore paired with an orientation-matching
+at construction. Metrics are *not flipped*, so a **minimize**
+metric (RMSE, Brier) puts the best model at low `x` and a **maximize** metric
+(accuracy) at high `x`. Each metric is therefore paired with an orientation-matching
 function
 (minimize → decreasing, maximize → increasing); validity rejects a mismatched pair.
 `beta` for `softmax_weights` is carried in `lambdaArgs` / `omegaArgs` and may differ
-between the two stages. Setting `store.cv.models = TRUE` keeps the stage-1 fold
-models in `kernelLambdas@kernelModels` (off by default, as they are diagnostic
-only).
+between the two stages.
+
+**Object slimming.** Prediction reads only `specs` and `bootOmegas`, so the
+fitted object drops diagnostic-only payloads by default: `store.cv.models = TRUE`
+keeps the stage-1 fold models in `kernelLambdas@kernelModels`, and
+`store.resamples = TRUE` keeps the resample matrices (`kernelSamples@data`,
+`bootSamples@bootData`); both are off by default. The stratification vector is
+never retained in `kernelSamples@splitargs` (it would duplicate the response
+column already stored in `specs@data`).

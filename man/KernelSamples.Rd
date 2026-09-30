@@ -22,11 +22,14 @@ fold matrices every kernel is cross-validated over in stage 1.
 \section{Slots}{
 
 \describe{
-\item{\code{data}}{the \code{train}/\code{test} fold matrices returned by \code{splitfun}}
+\item{\code{data}}{the \code{train}/\code{test} fold matrices returned by \code{splitfun}; cleared
+by \code{\link[=RandomMachines]{RandomMachines()}} unless \code{store.resamples = TRUE}}
 
 \item{\code{splitfun}}{resampling function (e.g. \code{\link[=kfold_cv]{kfold_cv()}})}
 
-\item{\code{splitargs}}{arguments passed to \code{splitfun}}
+\item{\code{splitargs}}{arguments passed to \code{splitfun}. \code{\link[=RandomMachines]{RandomMachines()}} drops the
+stratification vector \code{y} after the split is built: it duplicates a column
+of \code{specs@data}, and keeping it would serialise the response twice.}
 }}
 
 \examples{

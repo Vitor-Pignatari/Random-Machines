@@ -5,7 +5,7 @@ cat(mermaid('flowchart TD
   ND(["predict(rm, newdata)"])
   ND --> PR["predict(RandomMachines) : predict(BootOmegas, newdata, specs)"]
   PR --> SP["svmPredict(specs, model, newdata) for each bootstrap model"]
-  SP --> W["weights = .normalize_weights(bootOmegas)"]
+  SP --> W["weights = .to_simplex(bootOmegas)"]
   W --> AGG["rmAggregate(specs, predictions, weights)"]
   AGG --> Q{"spec subclass"}
   Q -->|"ArgSpecsReg"| RN["weighted mean : numeric vector"]

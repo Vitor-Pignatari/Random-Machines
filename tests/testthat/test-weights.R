@@ -37,7 +37,7 @@ test_that("softmax beta sharpens the weighting", {
 
 # ---- Normalization helpers --------------------------------------------------
 
-test_that(".to_simplex normalizes, zeroes negatives, and falls back to uniform", {
+test_that(".to_simplex normalizes, zeroes negatives/non-finites, and falls back to uniform", {
   # all-positive raw weights: plain division by the sum
   expect_equal(.to_simplex(c(2, 1, 1)), c(0.5, 0.25, 0.25))
   # a negative raw weight (a below-chance kernel under the logit transform) is
@@ -47,32 +47,26 @@ test_that(".to_simplex normalizes, zeroes negatives, and falls back to uniform",
   # nothing positive -> uniform fallback
   expect_equal(.to_simplex(c(0, 0, 0)), rep(1 / 3, 3))
   expect_equal(.to_simplex(c(-1, -2)), rep(1 / 2, 2))
-})
-
-test_that(".normalize_weights sums to 1 and neutralises non-finite weights", {
-  expect_equal(sum(.normalize_weights(c(1, 2, 3, 4))), 1)
-  w <- .normalize_weights(c(Inf, 5, 10, -3))
+  # non-finite entries (a misbehaving user-supplied transform) are neutralised;
+  # .to_simplex also renormalizes the stored omegas at predict time
+  w <- .to_simplex(c(Inf, 5, 10, -3))
   expect_true(all(is.finite(w)))
   expect_equal(sum(w), 1)
   expect_equal(w[1], 0)                                    # Inf neutralised
-  expect_equal(.normalize_weights(c(0, 0, 0)), rep(1 / 3, 3))
 })
 
 # ---- Selection grid ---------------------------------------------------------
 
-test_that(".default_weight_fns pairs each cell with its transforms", {
-  expect_identical(.default_weight_fns("binary", FALSE)$lambda, logit_weights)
-  expect_identical(.default_weight_fns("binary", FALSE)$omega,  inv_sq_gap_weights)
-  expect_identical(.default_weight_fns("binary", TRUE)$lambda,  inv_logit_weights)
-  expect_identical(.default_weight_fns("binary", TRUE)$omega,   inv_sq_weights)
-  expect_identical(.default_weight_fns("regression", FALSE)$lambda, softmax_weights)
-  expect_identical(.default_weight_fns("regression", FALSE)$omega,  softmax_weights)
-})
-
-test_that(".default_metric follows the task/prob grid (built-in metrics)", {
-  expect_identical(.default_metric("binary", FALSE),     .metric_accuracy)
-  expect_identical(.default_metric("binary", TRUE),      .metric_brier)
-  expect_identical(.default_metric("regression", FALSE), .metric_rmse)
+test_that(".task_defaults pairs each cell's metric with matching transforms", {
+  expect_identical(.task_defaults("binary", FALSE)$metric, .metric_accuracy)
+  expect_identical(.task_defaults("binary", FALSE)$lambda, logit_weights)
+  expect_identical(.task_defaults("binary", FALSE)$omega,  inv_sq_gap_weights)
+  expect_identical(.task_defaults("binary", TRUE)$metric,  .metric_brier)
+  expect_identical(.task_defaults("binary", TRUE)$lambda,  inv_logit_weights)
+  expect_identical(.task_defaults("binary", TRUE)$omega,   inv_sq_weights)
+  expect_identical(.task_defaults("regression", FALSE)$metric, .metric_rmse)
+  expect_identical(.task_defaults("regression", FALSE)$lambda, softmax_weights)
+  expect_identical(.task_defaults("regression", FALSE)$omega,  softmax_weights)
   # built-in metrics carry an orientation for the validity check
   expect_identical(.metric_direction(.metric_accuracy), "maximize")
   expect_identical(.metric_direction(.metric_brier),    "minimize")
@@ -160,6 +154,37 @@ test_that("a metric/weight-fn orientation mismatch is rejected at build time", {
                  lambdaFunction = inv_logit_weights),
     "orient"
   )
+})
+
+test_that(".metric_direction: attribute wins, bare metrics are probed, else NA", {
+  bare_acc <- function(truth, estimate) mean(truth == estimate)
+  bare_err <- function(truth, estimate) mean(truth != estimate)
+  truth <- factor(c(1, 2, 1, 2))
+  good  <- factor(c(1, 2, 2, 2))   # 3/4 correct
+  bad   <- factor(c(2, 1, 1, 1))   # 1/4 correct
+  # empirical inference from the good/bad probe
+  expect_identical(.metric_direction(bare_acc, truth, good, bad), "maximize")
+  expect_identical(.metric_direction(bare_err, truth, good, bad), "minimize")
+  # an explicit attribute overrides the probe
+  expect_identical(.metric_direction(.metric_rmse, truth, good, bad), "minimize")
+  # no attribute and no probe -> NA (orientation check skipped)
+  expect_identical(.metric_direction(bare_acc), NA_character_)
+})
+
+test_that("a misoriented bare metric is caught by the empirical probe", {
+  # error rate carries no direction attribute; the probe infers "minimize",
+  # which clashes with the maximize-oriented hard-classification defaults.
+  err_rate <- function(truth, estimate) mean(truth != estimate)
+  expect_error(
+    .build_specs(iris_binary(), Species ~ ., task = "binary",
+                 lambdaMetric = err_rate),
+    "orient"
+  )
+  # the same bare metric paired with a minimize-oriented function is accepted
+  specs <- .build_specs(iris_binary(), Species ~ ., task = "binary",
+                        lambdaMetric = err_rate,
+                        lambdaFunction = inv_logit_weights)
+  expect_s4_class(specs, "ArgSpecsBinary")
 })
 
 # ---- Argument threading (beta may differ per stage) -------------------------

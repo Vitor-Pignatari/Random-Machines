@@ -4,7 +4,7 @@
 \alias{random_machines}
 \title{Fit a Random Machines ensemble}
 \usage{
-random_machines(..., K = 1, store.cv.models = FALSE)
+random_machines(..., K = 1, store.cv.models = FALSE, store.resamples = FALSE)
 }
 \arguments{
 \item{...}{specification arguments forwarded to the internal spec builder:
@@ -20,12 +20,16 @@ Ara et al. (2021, 2022); \code{K > 1} switches to K-fold cross-validation.}
 \item{store.cv.models}{keep the per-fold CV models in the fitted object?
 \code{FALSE} (default) discards them (they are diagnostic only; prediction uses
 the bootstrap models), keeping the object small.}
+
+\item{store.resamples}{keep the resample matrices (CV fold matrices and
+bootstrap index matrices) in the fitted object? \code{FALSE} (default) clears
+them after fitting. Set \code{TRUE} to inspect the splits.}
 }
 \value{
 a fitted \link[=RandomMachines-class]{RandomMachines} object.
 }
 \description{
-The package entry point. Builds a model specification from \code{data} and
+Ensemble entry point. Builds a model specification from \code{data} and
 \code{formula}, then fits the two-stage ensemble (kernel lambdas, then bootstrap
 omegas) and returns a fitted \link[=RandomMachines-class]{RandomMachines} object to score with
 \code{\link[=predict]{predict()}}. The internal \code{.build_specs()} produces a specification without

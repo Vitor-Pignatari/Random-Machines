@@ -11,33 +11,26 @@
 #' @importFrom kernlab ksvm
 #' @noRd
 .call_builder <- function(specs) {
-  if (specs@implementation == "kernlab") {
-    
-    if (specs@task == "binary" | specs@task == "multiclass") {
-      type = "C-svc"
-    } else if (specs@task == "regression") {
-      type = "eps-svr"
-    }
+  ## kernlab is the only backend; the spec's validity enforces it.
+  type <- if (specs@task == "regression") "eps-svr" else "C-svc"
 
-    callargs <- list(
-      svm = quote(ksvm),
-      data = quote(specs@data),
-      x = specs@formula,
-      type = type,
-      prob.model = specs@prob
-    )
+  ## `data` is a placeholder: `.fit_one()` substitutes the actual training
+  ## partition into every call via `rlang::call_modify()`.
+  callargs <- list(
+    quote(ksvm),
+    data = quote(data),
+    x = specs@formula,
+    type = type,
+    prob.model = specs@prob
+  )
 
-    allcalls <- lapply(names(specs@args), function(x) {
-      args <- c(callargs, specs@args[[x]])
-      call <- as.call(args)
-      # Retorna call completa inclusive com argumentos não especificados
-      fun_call <- match.call(kernlab::ksvm, call)
-      return(fun_call)
-    })
-    names(allcalls) <- specs@kernels
-    
-    return(allcalls)
-  }
+  allcalls <- lapply(names(specs@args), function(x) {
+    call <- as.call(c(callargs, specs@args[[x]]))
+    # match.call() normalises the call so every argument is named
+    match.call(kernlab::ksvm, call)
+  })
+  names(allcalls) <- specs@kernels
+  allcalls
 }
 
 
@@ -66,65 +59,50 @@
 
 #' Fit one kernel SVM on a split, predict its held-out rows, and score it
 #'
+#' The held-out predictions are consumed here (by the metric) and not returned:
+#' downstream stages only need the fitted model and its metric.
+#'
 #' @param specs an ArgSpecs object (drives [svmPredict()] dispatch)
 #' @param svmcall a single call from `.call_builder()`
 #' @param data the full training data.frame
 #' @param train_idx row selector for the training partition
 #' @param test_idx row selector for the held-out partition
-#' @param metric_function metric applied to (truth, hard prediction)
-#' @return list(fit, predict, metric); `predict` keeps the prob-aware output
+#' @param metric_function metric applied to (truth, held-out prediction)
+#' @param response name of the response column (constant per pipeline; hoisted
+#'   by the [svmFit()] methods)
+#' @return list(fit, metric)
 #' @noRd
-.fit_one <- function(specs, svmcall, data, train_idx, test_idx, metric_function) {
+.fit_one <- function(specs, svmcall, data, train_idx, test_idx, metric_function,
+                     response) {
   train <- data[train_idx, ]
 
   # Guard: a classification partition with a single class cannot train an SVM
   # (kernlab errors cryptically). Surface an actionable message instead.
   if (specs@task %in% c("binary", "multiclass")) {
-    ytr <- train[[.response_name(svmcall)]]
+    ytr <- train[[response]]
     if (length(unique(ytr[!is.na(ytr)])) < 2L) {
       stop("a training partition contains a single class; cannot fit a ",
            "classifier. Consider a stratified resample.", call. = FALSE)
     }
   }
 
-  model   <- eval(rlang::call_modify(svmcall, data = train, fit = FALSE))
-  newdata <- data[test_idx, ]
-  pred    <- svmPredict(specs, model, newdata)
-  truth   <- data[test_idx, .response_name(svmcall)]
-  metric  <- .apply_metric(metric_function, truth, pred)
-  list(fit = model, predict = pred, metric = metric)
+  model  <- eval(rlang::call_modify(svmcall, data = train, fit = FALSE))
+  pred   <- svmPredict(specs, model, data[test_idx, ])
+  metric <- metric_function(data[test_idx, response], pred)
+  list(fit = model, metric = metric)
 }
 
-#' Apply a metric to (truth, estimate) and return a single numeric value
-#'
-#' A metric is any `function(truth, estimate)` returning a single finite numeric,
-#' where `estimate` matches the task's prediction shape: a numeric vector
-#' (regression), a class factor (hard classification) or an n x k class
-#' probability matrix (probabilistic classification). The built-in defaults live
-#' in metrics.R; a user may pass any function honouring that contract (validated
-#' by `.check_metric_eval()`).
-#'
-#' @param metric a metric function (built-in or user-supplied)
-#' @param truth the task's response (factor or numeric)
-#' @param estimate a vector (hard class / numeric) or a probability matrix
-#' @return a single numeric metric value
-#' @noRd
-.apply_metric <- function(metric, truth, estimate) {
-  metric(truth, estimate)
-}
-
-#' Assemble a list of per-fit results into fit/predict/metrics columns
+#' Assemble a list of per-fit results into fit/metrics columns
 #'
 #' Shared by the [svmFit()] methods: turns a list of `.fit_one()` results into
-#' the `list(fit, predict, metrics)` shape the pipeline consumes.
+#' the `list(fit, metrics)` shape the pipeline consumes.
 #'
 #' @param per a list of `.fit_one()` results
-#' @return `list(fit, predict, metrics)`
+#' @return `list(fit, metrics)`
 #' @noRd
 .assemble_fits <- function(per) {
   list(
     fit     = lapply(per, `[[`, "fit"),
-    predict = lapply(per, `[[`, "predict"),
     metrics = vapply(per, `[[`, numeric(1), "metric")
   )
 }

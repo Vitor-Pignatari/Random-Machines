@@ -146,10 +146,10 @@ classDiagram
 
 ```mermaid
 flowchart TD
-  U(["user: random_machines(data, formula, task, prob, …, K, store.cv.models)"])
+  U(["user: random_machines(data, formula, task, prob, …, K, store.cv.models, store.resamples)"])
   U --> BUILD[".build_specs() : resolve model frame, grid defaults (metric + pure weight fn)"]
   BUILD --> SPEC["ArgSpecs* leaf (Binary / MultiClass / *Prob / Reg)"]
-  SPEC --> ORCH["RandomMachines(specs, K, store.cv.models)"]
+  SPEC --> ORCH["RandomMachines(specs, K, store.cv.models, store.resamples)"]
   ORCH --> CB[".call_builder(specs) : per-kernel ksvm call templates"]
 
   subgraph S1["Stage 1 : kernel lambdas (λ)"]
@@ -194,7 +194,8 @@ normalization. Final normalization lives in `lambdaCalc()` and `omegaCalc()`:
   the regression random machines paper; default `beta = 2`, the paper's);
 - **both stages** project the transform's output onto the probability simplex
   (Σ=1: the hard sampling-weight rule for lambda, the paper's Eq. (2) shape for
-  omega; predict-time `.normalize_weights` is then a defensive no-op).
+  omega; the predict-time `.to_simplex` renormalization is then a defensive
+  no-op).
 
 A **metric** is any `function(truth, estimate)` returning a single finite numeric
 (estimate is a numeric vector, class factor, or probability matrix by task). The
@@ -205,9 +206,15 @@ metric (RMSE, Brier) puts the best model at low `x` and a **maximize** metric
 (accuracy) at high `x`. Each metric is therefore paired with an orientation-matching
 function (minimize with decreasing, maximize with increasing); validity rejects a
 mismatched pair. `beta` for `softmax_weights` is carried in `lambdaArgs` and
-`omegaArgs` and may differ between the two stages. Setting `store.cv.models = TRUE`
-keeps the stage-1 fold models in `kernelLambdas@kernelModels` (off by default, as
-they are diagnostic only).
+`omegaArgs` and may differ between the two stages.
+
+**Object slimming.** Prediction reads only `specs` and `bootOmegas`, so the
+fitted object drops diagnostic-only payloads by default: `store.cv.models = TRUE`
+keeps the stage-1 fold models in `kernelLambdas@kernelModels`, and
+`store.resamples = TRUE` keeps the resample matrices (`kernelSamples@data`,
+`bootSamples@bootData`); both are off by default. The stratification vector is
+never retained in `kernelSamples@splitargs` (it would duplicate the response
+column already stored in `specs@data`).
 
 ---
 
@@ -218,7 +225,7 @@ flowchart TD
   ND(["predict(rm, newdata)"])
   ND --> PR["predict(RandomMachines) → predict(BootOmegas, newdata, specs)"]
   PR --> SP["svmPredict(specs, model, newdata) for each bootstrap model"]
-  SP --> W["weights = .normalize_weights(bootOmegas)"]
+  SP --> W["weights = .to_simplex(bootOmegas)"]
   W --> AGG["rmAggregate(specs, predictions, weights)"]
   AGG --> Q{"spec subclass"}
   Q -->|"ArgSpecsReg"| RN["weighted mean → numeric vector"]
@@ -244,9 +251,9 @@ class name**, so models trained on different resamples combine correctly.
 | `ArgSpecsBinary` / `ArgSpecsMultiClass` | (none) | Concrete hard-classification leaves |
 | `ArgSpecsBinaryProb` / `ArgSpecsMultiClassProb` | (none) | Concrete probabilistic-classification leaves |
 | `ArgSpecsReg` | (none) | Concrete regression leaf |
-| `KernelSamples` | `data` (holdout/CV split), `splitfun`, `splitargs` | Stage-1 validation split(s) |
+| `KernelSamples` | `data` (holdout/CV split; cleared unless `store.resamples = TRUE`), `splitfun`, `splitargs` | Stage-1 validation split(s) |
 | `KernelLambdas` | `kernelMetrics`, `kernelLambdas`, `kernelModels` | Stage-1 kernel probabilities (λ) |
-| `BootSamples` | `bootData` (train/OOB indices), `bootFun`, `bootArgs` | Stage-2 bootstrap resamples |
+| `BootSamples` | `bootData` (train/OOB indices; cleared unless `store.resamples = TRUE`), `bootFun`, `bootArgs` | Stage-2 bootstrap resamples |
 | `BootOmegas` | `bootModels`, `bootMetrics`, `bootOmegas` | Stage-2 fitted models and weights (ω) |
 | `RandomMachines` | `specs` plus the four stage objects | The fitted ensemble; entry point for `predict()` |
 
@@ -278,7 +285,8 @@ Beyond the happy path, the end-to-end tests stress the pipeline on:
   (minority recall), not merely that the majority baseline is beaten.
 - **Custom metrics.** User-supplied `function(truth, estimate)` metrics passed as
   `lambdaMetric`/`omegaMetric` for each task (balanced accuracy, MAE, log-loss), a
-  bare metric with no `direction` attribute (whose orientation check is skipped),
+  bare metric with no `direction` attribute (whose orientation is inferred
+  empirically),
   and an invalid metric rejected at construction.
 - **Ensemble size.** A range of `B` from 1 upward, checking the fitted object holds
   exactly `B` bootstrap models and that probabilistic output stays a distribution

@@ -16,45 +16,17 @@
 #' simple_bs(indexes = 1:10, B = 5)
 #'
 simple_bs <- function(indexes, B) {
-  
-  if(!is.integer(indexes)){
-    stop("Argument 'indexes' must be of class 'integer'", call. = FALSE)  
-  }
-  
-  n <- length(indexes)
-  
-  bsmatrix <- matrix(nrow = length(indexes), ncol = B)
-  bsmatrix <- apply(bsmatrix, MARGIN = 2, function(x){
-    sample(indexes, replace = TRUE, size = n)
-  })
-  
-  oob <- apply(bsmatrix, MARGIN = 2, function(x){
-    !(indexes %in% x)
-  })
-  # Adopting 'train' and 'test' convention for conformity with rest of the package
-  return(list("train" = bsmatrix, "test" = oob))
-}
 
-#' Materialise bootstrap index matrices into data frames
-#'
-#' Inverse of [simple_bs()]: expands its `train`/`test` index matrices into
-#' lists of the corresponding data-frame rows from `original_data`. Not yet used
-#' by the pipeline; kept for planned functionality.
-#'
-#' @param bs_result a `list(train, test)` from [simple_bs()]
-#' @param original_data the data.frame the indices refer to
-#' @return a `list(train, oob)` of per-resample data frames
-#' @noRd
-.reverse_bs <- function(bs_result, original_data){
-  
-  bsmatrix <- apply(bs_result[["train"]], MARGIN = 2, function(x) {
-    original_data[x, ]
-  })
-  
-  oob <- apply(bs_result[["test"]], MARGIN = 2, function(x){
-    original_data[x, ]
-  })
-  
+  if(!is.integer(indexes)){
+    stop("Argument 'indexes' must be of class 'integer'", call. = FALSE)
+  }
+
+  n <- length(indexes)
+
+  # Column-major fill draws the same RNG stream as sampling column by column.
+  bsmatrix <- matrix(sample(indexes, n * B, replace = TRUE), nrow = n)
+  oob <- vapply(seq_len(B), function(b) !(indexes %in% bsmatrix[, b]), logical(n))
+
   # Adopting 'train' and 'test' convention for conformity with rest of the package
-  return(list("train" = bsmatrix, "oob" = oob))
+  list("train" = bsmatrix, "test" = oob)
 }

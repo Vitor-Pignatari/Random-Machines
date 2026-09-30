@@ -19,9 +19,9 @@ a numeric vector of per-model weights (omegas), length B
 }
 \description{
 Dispatches on the \link[=ArgSpecs-class]{ArgSpecs} spec. The base method (on \code{ArgSpecs})
-min-max scales the metrics, applies the spec's pure \code{omegaFunction} (with
-\code{omegaArgs}), and min-max scales the result to \verb{[0, 1]} (the final Sum=1
-voting weights are formed at predict time by \code{.normalize_weights}).
+applies the spec's pure \code{omegaFunction} (with \code{omegaArgs}) and projects the
+result onto the probability simplex; the predict-time renormalization of the
+stored omegas is then a defensive no-op.
 }
 \section{Methods (by class)}{
 \itemize{

@@ -3,11 +3,10 @@
 \docType{class}
 \name{ArgSpecsClassifProb-class}
 \alias{ArgSpecsClassifProb-class}
-\title{Probabilistic classification specification (virtual)}
+\title{Probabilistic classification specification}
 \description{
 Virtual parent of \link[=ArgSpecsBinaryProb-class]{ArgSpecsBinaryProb} and
 \link[=ArgSpecsMultiClassProb-class]{ArgSpecsMultiClassProb}: predictions are class-probability matrices and
-the weighting metric scores probabilities (e.g. the built-in Brier score). Not
-instantiated directly.
+the weighting metric scores probabilities (e.g. the built-in Brier score).
 }
 \keyword{internal}

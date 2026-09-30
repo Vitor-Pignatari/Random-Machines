@@ -7,10 +7,12 @@
 ##   * probabilistic classification -> n x k class-probability matrix (class-named cols)
 ## The defaults below are the package's own implementations; a user may pass any
 ## function satisfying those conditions (validated at construction, see
-## `.check_metric_eval()` in validity.R). Each default carries a `direction`
-## attribute ("maximize"/"minimize") so validity can check it agrees in
-## orientation with its paired weight function; a bare user function without one
-## simply skips that check.
+## `.check_metric_eval()` in validity.R). Validity also checks each metric
+## agrees in orientation with its paired weight function: a `direction`
+## attribute ("maximize"/"minimize", carried by every default below) declares
+## the orientation explicitly, and a bare user function without one has it
+## inferred empirically from good-vs-bad probe estimates (`.metric_direction()`
+## in weights.R).
 
 #' Classification accuracy (maximize)
 #'
@@ -52,23 +54,23 @@ attr(.metric_rmse, "direction") <- "minimize"
 }
 attr(.metric_brier, "direction") <- "minimize"
 
-#' Default (task/prob-aware) weighting metric
+#' Task/prob defaults: metric plus its orientation-matched weight functions
 #'
-#' The metric half of the selection grid: `.metric_accuracy` (hard
-#' classification, maximize), `.metric_brier` (probabilistic classification,
-#' minimize) and `.metric_rmse` (regression, minimize). Each pairs with an
-#' orientation-matching weight function from `.default_weight_fns()`.
+#' The full selection grid in one place. Each cell pairs the built-in metric
+#' with lambda (probability) and omega (weight) transforms whose orientation
+#' matches it. Resolved eagerly by `.build_specs()`, which stores the concrete
+#' objects in the spec's slots.
 #'
 #' @param task "regression", "binary" or "multiclass"
 #' @param prob logical; probabilistic classification?
-#' @return a metric function carrying a `direction` attribute
+#' @return `list(metric, lambda, omega)`
 #' @noRd
-.default_metric <- function(task, prob) {
+.task_defaults <- function(task, prob) {
   if (identical(task, "regression")) {
-    .metric_rmse
+    list(metric = .metric_rmse,     lambda = softmax_weights,   omega = softmax_weights)    # minimize
   } else if (isTRUE(prob)) {
-    .metric_brier
+    list(metric = .metric_brier,    lambda = inv_logit_weights, omega = inv_sq_weights)     # minimize
   } else {
-    .metric_accuracy
+    list(metric = .metric_accuracy, lambda = logit_weights,     omega = inv_sq_gap_weights) # maximize
   }
 }

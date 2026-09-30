@@ -27,8 +27,8 @@ svmFit(samples, specs, svmcalls, metric_function, ...)
 lambda-sampled kernel indices, one per bootstrap replicate}
 }
 \value{
-per-kernel list of \code{list(fit, predict, metrics)} (\code{KernelSamples}), or
-a single such list (\code{BootSamples})
+per-kernel list of \code{list(fit, metrics)} (\code{KernelSamples}), or a
+single such list (\code{BootSamples})
 }
 \description{
 Internal generic dispatched on the resample object. A \link{KernelSamples} runs

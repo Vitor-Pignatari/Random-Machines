@@ -3,10 +3,10 @@
 \docType{class}
 \name{ArgSpecsClassifHard-class}
 \alias{ArgSpecsClassifHard-class}
-\title{Hard (non-probabilistic) classification specification (virtual)}
+\title{Non-probabilistic classification specification}
 \description{
 Virtual parent of \link[=ArgSpecsBinary-class]{ArgSpecsBinary} and \link[=ArgSpecsMultiClass-class]{ArgSpecsMultiClass}:
 predictions are class factors and the weighting metric scores hard classes
-(e.g. \code{accuracy}). Not instantiated directly.
+(e.g. \code{accuracy}).
 }
 \keyword{internal}

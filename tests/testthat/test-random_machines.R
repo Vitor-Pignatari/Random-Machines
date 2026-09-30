@@ -75,10 +75,37 @@ test_that("lambda stage defaults to a single 75/25 holdout (papers' Algorithm 1)
   expect_identical(eval(formals(RandomMachines)$K), 1)
 
   set.seed(42)
-  rm <- random_machines(iris_binary(), Species ~ ., task = "binary", B = 5)
+  rm <- random_machines(iris_binary(), Species ~ ., task = "binary", B = 5,
+                        store.resamples = TRUE)  # keep the fold matrix to inspect
   tr <- rm@kernelSamples@data$train
   expect_identical(ncol(tr), 1L)                       # one split, not K folds
   expect_equal(mean(tr[, 1]), 0.75, tolerance = 0.02)  # ~75% training rows
+})
+
+test_that("store.resamples = FALSE (default) clears the resample matrices", {
+  set.seed(43)
+  df <- iris_binary()
+  rm <- random_machines(df, Species ~ ., task = "binary", B = 5)
+
+  # diagnostic payloads cleared; predict() only needs specs + bootOmegas
+  expect_length(rm@kernelSamples@data, 0)
+  expect_length(rm@bootSamples@bootData, 0)
+  # the stratification vector is not retained either (response lives in specs@data)
+  expect_false("y" %in% names(rm@kernelSamples@splitargs))
+
+  pred <- predict(rm, df)
+  expect_length(pred, nrow(df))
+})
+
+test_that("store.resamples = TRUE retains the resample matrices", {
+  set.seed(44)
+  df <- iris_binary()
+  rm <- random_machines(df, Species ~ ., task = "binary", B = 5,
+                        store.resamples = TRUE)
+
+  expect_named(rm@kernelSamples@data, c("train", "test"))
+  expect_named(rm@bootSamples@bootData, c("train", "test"))
+  expect_identical(ncol(rm@bootSamples@bootData$train), 5L)  # one column per replicate
 })
 
 test_that("random_machines() builds and fits in one call (B1)", {

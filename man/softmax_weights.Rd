@@ -16,7 +16,7 @@ Default \code{2}, the paper's default.}
 a raw numeric weight vector (not normalized)
 }
 \description{
-\code{exp(-beta * x / sd(x))}: the weight kernel of Eqs. (1)-(2) in Ara, Maia,
+\code{exp(-beta * x / sd(x))}: the weight function of Eqs. (1)-(2) in Ara, Maia,
 Louzada & Macedo (2022) \url{doi:10.1016/j.eswa.2022.117107}, for a minimize
 metric (lower is better, e.g. RMSE). The metric vector is divided by its
 standard deviation before the exponential, so the weights are invariant to

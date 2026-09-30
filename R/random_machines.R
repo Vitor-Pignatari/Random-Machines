@@ -1,6 +1,6 @@
 #' Fit a Random Machines ensemble
 #'
-#' The package entry point. Builds a model specification from `data` and
+#' Ensemble entry point. Builds a model specification from `data` and
 #' `formula`, then fits the two-stage ensemble (kernel lambdas, then bootstrap
 #' omegas) and returns a fitted [RandomMachines-class] object to score with
 #' [predict()]. The internal `.build_specs()` produces a specification without
@@ -17,6 +17,9 @@
 #' @param store.cv.models keep the per-fold CV models in the fitted object?
 #'   `FALSE` (default) discards them (they are diagnostic only; prediction uses
 #'   the bootstrap models), keeping the object small.
+#' @param store.resamples keep the resample matrices (CV fold matrices and
+#'   bootstrap index matrices) in the fitted object? `FALSE` (default) clears
+#'   them after fitting. Set `TRUE` to inspect the splits.
 #'
 #' @returns a fitted [RandomMachines-class] object.
 #'
@@ -28,9 +31,11 @@
 #' rm   <- random_machines(iris, formula = Species ~ ., task = "multiclass")
 #' pred <- predict(rm, iris)
 #' }
-random_machines <- function(..., K = 1, store.cv.models = FALSE) {
+random_machines <- function(..., K = 1, store.cv.models = FALSE,
+                            store.resamples = FALSE) {
   specs <- .build_specs(...)
-  RandomMachines(specs, K = K, store.cv.models = store.cv.models)
+  RandomMachines(specs, K = K, store.cv.models = store.cv.models,
+                 store.resamples = store.resamples)
 }
 
 #' Build a Random Machines specification (internal)
@@ -88,28 +93,7 @@ random_machines <- function(..., K = 1, store.cv.models = FALSE) {
                          prob           = FALSE,
                          implementation = "kernlab",
                          kernels        = c("rbf", "laplace", "poly2", "linear"),
-                         args           = list(
-                           "rbf" = list(
-                             C = 1,
-                             epsilon = 0.1,
-                             kernel = kernlab::rbfdot(sigma = 1)
-                           ),
-                           "laplace" = list(
-                             C = 1,
-                             epsilon = 0.1,
-                             kernel = kernlab::laplacedot(sigma = 1)
-                           ),
-                           "poly2" = list(
-                             C = 1,
-                             epsilon = 0.1,
-                             kernel = kernlab::polydot(degree = 2, scale = 1, offset = 0)
-                           ),
-                           "linear" = list(
-                             C = 1,
-                             epsilon = 0.1,
-                             kernel = kernlab::vanilladot()
-                           )
-                         ),
+                         args           = .default_kernel_args(),
                          B              = 100L,
                          lambdaMetric   = NULL,
                          lambdaFunction = NULL,
@@ -141,12 +125,10 @@ random_machines <- function(..., K = 1, store.cv.models = FALSE) {
 
   ## Grid defaults are resolved eagerly (concrete objects stored in the slots).
   ## The metric and its paired weight function share an orientation (validity
-  ## enforces this for user-supplied pairs). See `.default_metric` /
-  ## `.default_weight_fns` in weights.R.
-  if (is.null(lambdaMetric)) lambdaMetric <- .default_metric(task, prob)
-  if (is.null(omegaMetric))  omegaMetric  <- .default_metric(task, prob)
-
-  defs <- .default_weight_fns(task, prob)
+  ## enforces this for user-supplied pairs). See `.task_defaults` in metrics.R.
+  defs <- .task_defaults(task, prob)
+  if (is.null(lambdaMetric))   lambdaMetric   <- defs$metric
+  if (is.null(omegaMetric))    omegaMetric    <- defs$metric
   if (is.null(lambdaFunction)) lambdaFunction <- defs$lambda
   if (is.null(omegaFunction))  omegaFunction  <- defs$omega
 
@@ -167,4 +149,21 @@ random_machines <- function(..., K = 1, store.cv.models = FALSE) {
     omegaFunction  = omegaFunction,
     omegaArgs      = omegaArgs
   )
+}
+
+#' Default per-kernel ksvm arguments (the papers' setup)
+#'
+#' One argument list per kernel in the papers' four-kernel set. Every kernel
+#' shares `C = 1` and `epsilon = 0.1` and carries its own hyperparameters.
+#'
+#' @return named list of per-kernel `ksvm` argument lists
+#' @noRd
+.default_kernel_args <- function() {
+  kernel_objs <- list(
+    rbf     = kernlab::rbfdot(sigma = 1),
+    laplace = kernlab::laplacedot(sigma = 1),
+    poly2   = kernlab::polydot(degree = 2, scale = 1, offset = 0),
+    linear  = kernlab::vanilladot()
+  )
+  lapply(kernel_objs, function(k) list(C = 1, epsilon = 0.1, kernel = k))
 }

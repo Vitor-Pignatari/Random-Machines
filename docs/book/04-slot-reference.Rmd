@@ -9,9 +9,9 @@
 | `ArgSpecsBinary` / `ArgSpecsMultiClass` | (none) | Concrete hard-classification leaves |
 | `ArgSpecsBinaryProb` / `ArgSpecsMultiClassProb` | (none) | Concrete probabilistic-classification leaves |
 | `ArgSpecsReg` | (none) | Concrete regression leaf |
-| `KernelSamples` | `data` (CV split), `splitfun`, `splitargs` | Stage-1 cross-validation folds |
+| `KernelSamples` | `data` (CV split; cleared unless `store.resamples = TRUE`), `splitfun`, `splitargs` | Stage-1 cross-validation folds |
 | `KernelLambdas` | `kernelMetrics`, `kernelLambdas`, `kernelModels` | Stage-1 kernel probabilities (λ) |
-| `BootSamples` | `bootData` (train/OOB indices), `bootFun`, `bootArgs` | Stage-2 bootstrap resamples |
+| `BootSamples` | `bootData` (train/OOB indices; cleared unless `store.resamples = TRUE`), `bootFun`, `bootArgs` | Stage-2 bootstrap resamples |
 | `BootOmegas` | `bootModels`, `bootMetrics`, `bootOmegas` | Stage-2 fitted models + weights (ω) |
 | `RandomMachines` | `specs` + the four stage objects | The fitted ensemble; entry point for `predict()` |
 

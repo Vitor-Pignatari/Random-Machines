@@ -19,9 +19,9 @@ a numeric vector of kernel selection probabilities (summing to 1)
 }
 \description{
 Dispatches on the \link[=ArgSpecs-class]{ArgSpecs} spec so the normalization pipeline can be
-specialised per task if needed. The base method (on \code{ArgSpecs}) min-max scales
-the metrics, applies the spec's pure \code{lambdaFunction} (with \code{lambdaArgs}), and
-projects the result onto the probability simplex (sums to 1).
+specialised per task if needed. The base method (on \code{ArgSpecs}) applies the
+spec's pure \code{lambdaFunction} (with \code{lambdaArgs}) and projects the result onto
+the probability simplex (sums to 1).
 }
 \section{Methods (by class)}{
 \itemize{

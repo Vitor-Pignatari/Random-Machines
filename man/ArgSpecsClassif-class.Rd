@@ -3,13 +3,11 @@
 \docType{class}
 \name{ArgSpecsClassif-class}
 \alias{ArgSpecsClassif-class}
-\title{Classification specification (virtual)}
+\title{Classification specification}
 \description{
-Virtual intermediate shared by every classification spec (hard and
-probabilistic). Carries the check common to all of them: the response must be
-a factor. Prediction, aggregation and the metric check are attached one level
+Virtual shared by classification specs.
+Prediction, aggregation and the metric check are one level
 down, on \link[=ArgSpecsClassifHard-class]{ArgSpecsClassifHard} and \link[=ArgSpecsClassifProb-class]{ArgSpecsClassifProb}, so
-hard-vote and probability cases dispatch without a \code{prob} branch. Not
-instantiated directly.
+hard vote and probability cases dispatch without a \code{prob} branch.
 }
 \keyword{internal}

@@ -45,7 +45,7 @@ setMethod(
       object@bootModels,
       function(model) svmPredict(specs, model, newdata)
     )
-    weights <- .normalize_weights(object@bootOmegas)
+    weights <- .to_simplex(object@bootOmegas)
 
     rmAggregate(specs, predictions, weights)
   }

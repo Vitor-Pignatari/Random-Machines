@@ -6,7 +6,7 @@
 \title{Fitted RandomMachines ensemble}
 \description{
 The object returned by \code{\link[=random_machines]{random_machines()}}: the spec plus every stage of the
-fitted two-stage pipeline. Score new data with \code{\link[=predict]{predict()}}.
+fitted two-stage pipeline. Predict values for new data with \code{\link[=predict]{predict()}}.
 }
 \section{Slots}{
 

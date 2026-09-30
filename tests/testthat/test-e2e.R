@@ -88,7 +88,7 @@ check_prob <- function(df, formula, resp, task, seed, acc_floor, B = 25, K = 4, 
   P     <- predict(rm, sp$test)
   truth <- as.character(sp$test[[resp]])
 
-  # probability-matrix contract
+  # probability matrix contract
   expect_true(is.matrix(P))
   expect_equal(nrow(P), nrow(sp$test))
   expect_true(all(P >= -1e-8 & P <= 1 + 1e-8))
@@ -142,9 +142,9 @@ check_imbalanced <- function(df, formula, resp, task, prob, seed,
 
 # ---- custom metric functions ------------------------------------------------
 # Any `function(truth, estimate)` returning a single finite numeric is a valid
-# weighting metric. The `direction` attribute lets validity check the metric
-# agrees in orientation with the default weight function; a metric without one
-# skips that check (see metric_bare_acc).
+# weighting metric. Validity checks the metric agrees in orientation with the
+# paired weight function: a `direction` attribute declares it explicitly, and a
+# bare metric's orientation is inferred empirically (see metric_bare_acc).
 
 metric_balanced_acc <- function(truth, estimate) {
   t <- as.character(truth); e <- as.character(estimate)
@@ -245,7 +245,8 @@ test_that("probabilistic classification accepts a custom log-loss metric", {
 })
 
 test_that("a custom metric with no direction attribute is accepted", {
-  # No `direction`, so the orientation check is skipped and the fit still works.
+  # No `direction` attribute: the orientation is inferred empirically
+  # (maximize, matching the default weight functions) and the fit works.
   check_hard(blobs_binary, y ~ x1 + x2, "y", "binary", seed = 45, acc_floor = 0.85,
              lambdaMetric = metric_bare_acc, omegaMetric = metric_bare_acc)
 })

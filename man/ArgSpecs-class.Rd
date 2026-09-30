@@ -3,12 +3,12 @@
 \docType{class}
 \name{ArgSpecs-class}
 \alias{ArgSpecs-class}
-\title{Random Machines specification (virtual base class)}
+\title{Random Machines specification}
 \description{
 Virtual parent holding every argument the pipeline fits from. Built by
-\code{\link[=random_machines]{random_machines()}} (via the internal \code{.build_specs()}) as one of the concrete
-task subclasses: \code{ArgSpecsBinary}, \code{ArgSpecsMultiClass}, \code{ArgSpecsBinaryProb},
-\code{ArgSpecsMultiClassProb} or \code{ArgSpecsReg}. Not instantiated directly.
+random_machines() (via the internal \code{.build_specs()}) as one of the concrete
+task subclasses: \code{ArgSpecsBinary}, \code{ArgSpecsMultiClass},
+\code{ArgSpecsBinaryProb}, \code{ArgSpecsMultiClassProb} or \code{ArgSpecsReg}.
 }
 \section{Slots}{
 
@@ -21,7 +21,7 @@ task subclasses: \code{ArgSpecsBinary}, \code{ArgSpecsMultiClass}, \code{ArgSpec
 
 \item{\code{prob}}{logical; TRUE for a probabilistic model}
 
-\item{\code{implementation}}{backend identifier (currently "kernlab")}
+\item{\code{implementation}}{backend identifier (only "kernlab" currently available)}
 
 \item{\code{kernels}}{character vector of kernel identifiers}
 
@@ -33,7 +33,7 @@ task subclasses: \code{ArgSpecsBinary}, \code{ArgSpecsMultiClass}, \code{ArgSpec
 lambda stage}
 
 \item{\code{lambdaFunction}}{pure transform mapping kernel metrics to raw lambda
-weights; the pipeline projects the result onto the simplex}
+weights;}
 
 \item{\code{lambdaArgs}}{list of pre-bound arguments for \code{lambdaFunction} (e.g.
 \code{list(beta = 0.5)})}
@@ -42,7 +42,7 @@ weights; the pipeline projects the result onto the simplex}
 omega stage}
 
 \item{\code{omegaFunction}}{pure transform mapping model metrics to raw omega
-weights; the pipeline projects the result onto the simplex}
+weights;}
 
 \item{\code{omegaArgs}}{list of pre-bound arguments for \code{omegaFunction}}
 }}

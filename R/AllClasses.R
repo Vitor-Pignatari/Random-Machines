@@ -1,31 +1,31 @@
 #' @include AllGenerics.R
 NULL
 
-#' Random Machines specification (virtual base class)
+#' Random Machines specification
 #'
 #' Virtual parent holding every argument the pipeline fits from. Built by
-#' [random_machines()] (via the internal `.build_specs()`) as one of the concrete
-#' task subclasses: `ArgSpecsBinary`, `ArgSpecsMultiClass`, `ArgSpecsBinaryProb`,
-#' `ArgSpecsMultiClassProb` or `ArgSpecsReg`. Not instantiated directly.
+#' random_machines() (via the internal `.build_specs()`) as one of the concrete
+#' task subclasses: `ArgSpecsBinary`, `ArgSpecsMultiClass`,
+#' `ArgSpecsBinaryProb`, `ArgSpecsMultiClassProb` or `ArgSpecsReg`.
 #'
 #' @slot data resolved model frame (response + predictors)
 #' @slot formula model formula
 #' @slot task task string: "binary", "multiclass" or "regression"
 #' @slot prob logical; TRUE for a probabilistic model
-#' @slot implementation backend identifier (currently "kernlab")
+#' @slot implementation backend identifier (only "kernlab" currently available)
 #' @slot kernels character vector of kernel identifiers
 #' @slot args per-kernel list of arguments passed to `kernlab::ksvm`
 #' @slot B integer number of bootstrap models
 #' @slot lambdaMetric metric `function(truth, estimate)` scoring kernels in the
 #'   lambda stage
 #' @slot lambdaFunction pure transform mapping kernel metrics to raw lambda
-#'   weights; the pipeline projects the result onto the simplex
+#'   weights;
 #' @slot lambdaArgs list of pre-bound arguments for `lambdaFunction` (e.g.
 #'   `list(beta = 0.5)`)
 #' @slot omegaMetric metric `function(truth, estimate)` scoring models in the
 #'   omega stage
 #' @slot omegaFunction pure transform mapping model metrics to raw omega
-#'   weights; the pipeline projects the result onto the simplex
+#'   weights; 
 #' @slot omegaArgs list of pre-bound arguments for `omegaFunction`
 #'
 #' @include resample.R weights.R metrics.R
@@ -33,11 +33,10 @@ NULL
 #' @export
 
 setClass(
-  contains = 'VIRTUAL',
+  contains = "VIRTUAL",
   Class = "ArgSpecs",
   slots = list(
-    # The resolved model frame, stored once. Not a symbol: the
-    # object is self-contained and survives saveRDS/reload.
+    # The model frame, stored once.
     data           = "data.frame",
     formula        = "formula",
     task           = "character",
@@ -47,11 +46,8 @@ setClass(
     args           = "list",
     B              = "numeric",
     # Metrics are `function(truth, estimate)` returning a single finite numeric.
-    # The slot is "ANY" (not "function") so a user may also pass a callable that
-    # is not a bare closure; validity checks that it evaluates.
+    # Slot is "ANY" so the user may also pass a callable that is not a closure.
     lambdaMetric   = "ANY",
-    # `*Args` carry pre-bound arguments (e.g. a softmax `beta`), mirroring the
-    # splitfun/splitargs and bootFun/bootArgs pattern.
     lambdaFunction = "function",
     lambdaArgs     = "list",
     omegaMetric    = "ANY",
@@ -60,50 +56,41 @@ setClass(
   )
 )
 
-#' Classification specification (virtual)
+#' Classification specification
 #'
-#' Virtual intermediate shared by every classification spec (hard and
-#' probabilistic). Carries the check common to all of them: the response must be
-#' a factor. Prediction, aggregation and the metric check are attached one level
+#' Virtual shared by classification specs.
+#' Prediction, aggregation and the metric check are one level
 #' down, on [ArgSpecsClassifHard-class] and [ArgSpecsClassifProb-class], so
-#' hard-vote and probability cases dispatch without a `prob` branch. Not
-#' instantiated directly.
+#' hard vote and probability cases dispatch without a `prob` branch.
 #'
 #' @keywords internal
 setClass(Class = "ArgSpecsClassif", contains = c("ArgSpecs", "VIRTUAL"))
 
-#' Hard (non-probabilistic) classification specification (virtual)
+#' Non-probabilistic classification specification
 #'
 #' Virtual parent of [ArgSpecsBinary-class] and [ArgSpecsMultiClass-class]:
 #' predictions are class factors and the weighting metric scores hard classes
-#' (e.g. `accuracy`). Not instantiated directly.
+#' (e.g. `accuracy`).
 #'
 #' @keywords internal
 setClass(Class = "ArgSpecsClassifHard", contains = c("ArgSpecsClassif", "VIRTUAL"))
 
-#' Probabilistic classification specification (virtual)
+#' Probabilistic classification specification
 #'
 #' Virtual parent of [ArgSpecsBinaryProb-class] and
 #' [ArgSpecsMultiClassProb-class]: predictions are class-probability matrices and
-#' the weighting metric scores probabilities (e.g. the built-in Brier score). Not
-#' instantiated directly.
+#' the weighting metric scores probabilities (e.g. the built-in Brier score).
 #'
 #' @keywords internal
 setClass(Class = "ArgSpecsClassifProb", contains = c("ArgSpecsClassif", "VIRTUAL"))
 
-#' Multiclass classification specification (hard)
+#' Multiclass classification specification
 #'
 #' Concrete [ArgSpecs-class] subclass for hard multiclass tasks; built by
 #' [random_machines()] with `task = "multiclass"`, `prob = FALSE`.
 #'
 #' @export
 setClass(Class = "ArgSpecsMultiClass", contains = "ArgSpecsClassifHard")
-ArgSpecsMultiClass <- function() {
-  specs <- new("ArgSpecsMultiClass")
-  specs@task <- "multiclass"
-  specs@prob <- FALSE
-  return(specs)
-}
 
 #' Binary classification specification (hard)
 #'
@@ -112,12 +99,6 @@ ArgSpecsMultiClass <- function() {
 #'
 #' @export
 setClass(Class = "ArgSpecsBinary", contains = "ArgSpecsClassifHard")
-ArgSpecsBinary <- function() {
-  specs <- new("ArgSpecsBinary")
-  specs@task <- "binary"
-  specs@prob <- FALSE
-  return(specs)
-}
 
 #' Multiclass classification specification (probabilistic)
 #'
@@ -126,12 +107,6 @@ ArgSpecsBinary <- function() {
 #'
 #' @export
 setClass(Class = "ArgSpecsMultiClassProb", contains = "ArgSpecsClassifProb")
-ArgSpecsMultiClassProb <- function() {
-  specs <- new("ArgSpecsMultiClassProb")
-  specs@task <- "multiclass"
-  specs@prob <- TRUE
-  return(specs)
-}
 
 #' Binary classification specification (probabilistic)
 #'
@@ -140,12 +115,6 @@ ArgSpecsMultiClassProb <- function() {
 #'
 #' @export
 setClass(Class = "ArgSpecsBinaryProb", contains = "ArgSpecsClassifProb")
-ArgSpecsBinaryProb <- function() {
-  specs <- new("ArgSpecsBinaryProb")
-  specs@task <- "binary"
-  specs@prob <- TRUE
-  return(specs)
-}
 
 #' Regression specification
 #'
@@ -154,19 +123,12 @@ ArgSpecsBinaryProb <- function() {
 #'
 #' @export
 setClass(Class = "ArgSpecsReg", contains = "ArgSpecs")
-ArgSpecsReg <- function(){
-  specs <- new("ArgSpecsReg")
-  specs@task <- "regression"
-  specs@prob <- FALSE
-  return(specs)
-}
 
 # Validity is split across the class set: task-agnostic checks
-# live on ArgSpecs; the response class check on ArgSpecsClassif / ArgSpecsReg;
-# and the metric smoke test (which depends on the prediction shape) on
-# ArgSpecsClassifHard / ArgSpecsClassifProb / ArgSpecsReg. S4 runs the validity
-# of a class *and* all its superclasses, so every concrete spec gets the shared
-# checks plus its own. Helpers: see validity.R and weights.R.
+# live on ArgSpecs. The response class check on ArgSpecsClassif / ArgSpecsReg.
+# The metric smoke test (which depends on the prediction shape) on
+# ArgSpecsClassifHard / ArgSpecsClassifProb / ArgSpecsReg.
+# Helpers: see validity.R and weights.R.
 setValidity(Class = "ArgSpecs", function(object) {
 
   ## `data` is the resolved model frame; the slot type guarantees
@@ -179,16 +141,20 @@ setValidity(Class = "ArgSpecs", function(object) {
     return("'task' must be one of : regression, binary, multiclass")
   }
 
+  if (!identical(object@implementation, "kernlab")) {
+    return("'implementation' must be \"kernlab\" (the only available backend)")
+  }
+
   ## The response must be derivable from formula + data. Its *class* vs task
   ## compatibility is checked per-subclass (ArgSpecsClassif / ArgSpecsReg).
   if (is.null(.resolve_response(object))) {
     return("'formula' is not compatible with 'data'")
   }
 
-  ## We check each passed function evaluates (with its pre-bound args) to 
-  ## a numeric vector of the right length, and, 
-  ## when both the metric and the function expose a direction, that they
-  ## agree in orientation (a minimize metric needs a decreasing weight fn).
+  ## We check each passed function evaluates (with its pre-bound args) to a
+  ## numeric vector of the right length. Orientation agreement with the metric
+  ## needs shape-appropriate validity, so it lives in the subclass validities
+  ## (via `.check_metrics()`).
   probe <- seq_len(50) / 51
   for (stg in c("lambda", "omega")) {
     fn   <- methods::slot(object, paste0(stg, "Function"))
@@ -197,14 +163,6 @@ setValidity(Class = "ArgSpecs", function(object) {
     if (is.null(res))      return(sprintf("'%sFunction' could not be evaluated.", stg))
     if (!is.numeric(res))  return(sprintf("'%sFunction' must return a numeric vector.", stg))
     if (length(res) != 50) return(sprintf("'%sFunction' must return a vector with the same length as the input.", stg))
-
-    mdir <- .metric_direction(methods::slot(object, paste0(stg, "Metric")))
-    fdir <- .weight_fn_direction(fn, args)
-    if (!is.na(mdir) && !is.na(fdir) && !identical(mdir, fdir)) {
-      return(sprintf(
-        "'%sFunction' is %s-oriented but '%sMetric' has direction '%s'; they must agree.",
-        stg, fdir, stg, mdir))
-    }
   }
 
   # B
@@ -222,65 +180,54 @@ setValidity(Class = "ArgSpecs", function(object) {
 ## metric smoke-test depends on the prediction shape, so it lives one level down
 ## (ArgSpecsClassifHard / ArgSpecsClassifProb).
 setValidity(Class = "ArgSpecsClassif", function(object) {
-  y <- .resolve_response(object)
-  if (is.null(y)) return(TRUE)  # data/formula issue already reported by ArgSpecs
-  if (!methods::is(y, "factor")) {
-    return(paste0("Task '", object@task,
-                  "' is not compatible with a response of class '", class(y)[1], "'"))
-  }
-  TRUE
+  .check_response_is(object, "factor")
 })
 
 ## Hard classification: metrics must evaluate on hard classes (factor truth,
-## factor estimate), e.g. accuracy.
+## factor estimate), e.g. accuracy. `good` predicts 3/4 classes right, `bad`
+## 1/4, so a bare metric's orientation can be inferred empirically.
 setValidity(Class = "ArgSpecsClassifHard", function(object) {
-  truth <- as.factor(c(1, 2, 1, 2))
-  estimate <- as.factor(c(1, 2, 2, 2))
-  chk <- .check_metric_eval(object@lambdaMetric, truth, estimate, "lambdaMetric")
-  if (!isTRUE(chk)) return(chk)
-  chk <- .check_metric_eval(object@omegaMetric, truth, estimate, "omegaMetric")
-  if (!isTRUE(chk)) return(chk)
-  TRUE
+  lev <- c("1", "2")
+  .check_metrics(object,
+                 truth = factor(c(1, 2, 1, 2), levels = lev),
+                 good  = factor(c(1, 2, 2, 2), levels = lev),
+                 bad   = factor(c(2, 1, 1, 1), levels = lev))
 })
 
 ## Probabilistic classification: metrics must evaluate on a class-probability
 ## matrix (factor truth + one probability column per class), e.g. the built-in
-## `.metric_brier`. We shape the probe from the concrete subclass (binary -> 2
-## columns, multiclass -> 3) to mirror the real prediction shape.
+## `.metric_brier`. We shape the probes from the concrete subclass (binary -> 2
+## columns, multiclass -> 3) to mirror the real prediction shape. `good` puts
+## each row's probability mass on the true class; `bad` shifts it off-truth
+## (rows still sum to 1), so a bare metric's orientation can be inferred.
 setValidity(Class = "ArgSpecsClassifProb", function(object) {
   if (methods::is(object, "ArgSpecsBinaryProb")) {
     lev   <- c("a", "b")
     truth <- factor(c("a", "b", "a", "b"), levels = lev)
-    est   <- matrix(c(.8, .3, .6, .4, .2, .7, .4, .6), ncol = 2,
+    good  <- matrix(c(.8, .3, .6, .4, .2, .7, .4, .6), ncol = 2,
                     dimnames = list(NULL, lev))
+    bad   <- 1 - good
   } else {
     lev   <- c("a", "b", "c")
     truth <- factor(c("a", "b", "c", "a"), levels = lev)
-    est   <- matrix(c(.7, .1, .2, .5, .2, .8, .3, .3, .1, .1, .5, .2), ncol = 3,
+    good  <- matrix(c(.7, .1, .2, .5, .2, .8, .3, .3, .1, .1, .5, .2), ncol = 3,
                     dimnames = list(NULL, lev))
+    bad   <- good[, c(2, 3, 1)]
+    colnames(bad) <- lev
   }
-  chk <- .check_metric_eval(object@lambdaMetric, truth, est, "lambdaMetric")
-  if (!isTRUE(chk)) return(chk)
-  chk <- .check_metric_eval(object@omegaMetric, truth, est, "omegaMetric")
-  if (!isTRUE(chk)) return(chk)
-  TRUE
+  .check_metrics(object, truth, good, bad)
 })
 
 ## Regression: response must be numeric and the metrics must evaluate on numeric
-## (truth, estimate).
+## (truth, estimate). `good` is close to truth, `bad` is the reversed truth, so
+## a bare metric's orientation can be inferred empirically.
 setValidity(Class = "ArgSpecsReg", function(object) {
-  y <- .resolve_response(object)
-  if (is.null(y)) return(TRUE)
-  if (!methods::is(y, "numeric")) {
-    return(paste0("Task '", object@task,
-                  "' is not compatible with a response of class '", class(y)[1], "'"))
-  }
-  truth <- c(1, 2, 3, 4); estimate <- c(1, 2, 2, 4)
-  chk <- .check_metric_eval(object@lambdaMetric, truth, estimate, "lambdaMetric")
+  chk <- .check_response_is(object, "numeric")
   if (!isTRUE(chk)) return(chk)
-  chk <- .check_metric_eval(object@omegaMetric, truth, estimate, "omegaMetric")
-  if (!isTRUE(chk)) return(chk)
-  TRUE
+  .check_metrics(object,
+                 truth = c(1, 2, 3, 4),
+                 good  = c(1, 2, 2, 4),
+                 bad   = c(4, 3, 2, 1))
 })
 
 #' Cross-validation splits for the kernel-lambda stage
@@ -288,9 +235,12 @@ setValidity(Class = "ArgSpecsReg", function(object) {
 #' Holds the resampling function, its arguments, and the resulting `train`/`test`
 #' fold matrices every kernel is cross-validated over in stage 1.
 #'
-#' @slot data the `train`/`test` fold matrices returned by `splitfun`
+#' @slot data the `train`/`test` fold matrices returned by `splitfun`; cleared
+#'   by [RandomMachines()] unless `store.resamples = TRUE`
 #' @slot splitfun resampling function (e.g. [kfold_cv()])
-#' @slot splitargs arguments passed to `splitfun`
+#' @slot splitargs arguments passed to `splitfun`. [RandomMachines()] drops the
+#'   stratification vector `y` after the split is built: it duplicates a column
+#'   of `specs@data`, and keeping it would serialise the response twice.
 #'
 #' @name KernelSamples
 setClass(
@@ -299,23 +249,23 @@ setClass(
     data      = "list",
     splitfun  = "function",
     splitargs = "list"
-  ),
-  prototype  = list(
-    data     = list(),
-    splitfun = function(x){
-    },
-    splitargs = list()
   )
 )
 
 setValidity(Class = "KernelSamples", function(object) {
-  # Ad
-  if (length(
-    do.call(object@splitfun, object@splitargs)
-    ) != 2) {
-    return("splitfun must return a list with two elements, the resample matrix and test matrix")
+  ## Check the structure of the stored split rather than re-running splitfun
+  ## (a re-run would duplicate the work and consume RNG state). Empty data
+  ## means the diagnostic payload was cleared (`store.resamples = FALSE`).
+  if (length(object@data) == 0L) return(TRUE)
+  if (!setequal(names(object@data), c("train", "test"))) {
+    return("data must be a list with elements 'train' and 'test' (see kfold_cv())")
   }
-  # Usar como base o vfold_cv
+  if (!all(vapply(object@data, is.matrix, logical(1)))) {
+    return("data's 'train' and 'test' elements must be matrices")
+  }
+  if (nrow(object@data[["train"]]) != nrow(object@data[["test"]])) {
+    return("data's 'train' and 'test' matrices must have the same number of rows")
+  }
   TRUE
 })
 
@@ -354,10 +304,6 @@ setClass(
     kernelLambdas = "numeric"
   )
 )
-
-setValidity(Class = "KernelLambdas", function(object) {
-  TRUE
-})
 
 #' KernelLambdas constructor
 #'
@@ -416,60 +362,27 @@ setClass(
     bootFun     = "function",
     bootArgs    = "list",
     bootData    = "list"
-  ),
-  prototype = list(
-    bootFun = simple_bs,
-    bootArgs  = list(B = 100),
-    bootData = list("train" = matrix(), "test" = matrix())
   )
 )
 
 setValidity(
   Class = "BootSamples",
   method = function(object) {
-    # object@bootData[["train"]] is N x B rows matrix with values indicating row number/name in original sample
-    # object@bootData[["test"]] is N x B rows matrix with values indicating whether sample is in test or not
-    nameVal <- setequal(names(object@bootData), c("train", "test"))
-    
-    # bootData must be a list of length 2
-    lengthVal <- length(object@bootData) == 2 &
-      is.list(object@bootData)
-    
-    sizeVal <- nrow(object@bootData[["train"]]) == nrow(object@bootData[["test"]])
-    
-    classesVal <- setequal(unique(as.character(sapply(
-      object@bootData, class
-    ))), c("matrix", "array"))
-    
-    messages <- vector(mode = "character", length = 4)
-    errors <- numeric(length(messages))
-    
-    if (!nameVal) {
-      errors[1] <- 1
-      messages[1] <- "Error: bootData must be a named list with named matrixes 'train' and 'test'."
+    ## bootData: `train` holds the resampled row indices (one column per
+    ## resample); `test` flags the out-of-bag rows, same shape. Empty means the
+    ## diagnostic payload was cleared (`store.resamples = FALSE`).
+    if (length(object@bootData) == 0L) return(TRUE)
+    if (!(is.list(object@bootData) && length(object@bootData) == 2 &&
+          setequal(names(object@bootData), c("train", "test")))) {
+      return("bootData must be a named list with elements 'train' and 'test'.")
     }
-    
-    if (!lengthVal) {
-      errors[2] <- 1
-      messages[2] <- "Error: bootData must be a named list of size 2."
+    if (!all(vapply(object@bootData, is.matrix, logical(1)))) {
+      return("bootData's 'train' and 'test' elements must be matrices.")
     }
-    
-    if (!sizeVal) {
-      errors[3] <- 1
-      messages[3] <- "Error: number of rows in object bootData 'train' matrix is different than the object in 'test Matrix'."
+    if (nrow(object@bootData[["train"]]) != nrow(object@bootData[["test"]])) {
+      return("bootData's 'train' and 'test' matrices must have the same number of rows.")
     }
-    
-    if (!classesVal) {
-      errors[4] <- 1
-      messages[4] <- "Error: bootData's elements must be of class 'matrix', 'array'."
-    }
-    
-    if (sum(errors == 0)) {
-      return(TRUE)
-    } else{
-      cat(paste(messages, collapse = "\n"))
-      return(FALSE)
-    }
+    TRUE
   }
 )
 
@@ -546,7 +459,7 @@ BootOmegas <- function(
     ) {
   
   indexes <- sample(
-    1:length(svmcalls),
+    seq_along(svmcalls),
     prob = lambdas,
     replace = TRUE,
     size = specs@B
@@ -574,7 +487,7 @@ BootOmegas <- function(
 #' Fitted RandomMachines ensemble
 #'
 #' The object returned by [random_machines()]: the spec plus every stage of the
-#' fitted two-stage pipeline. Score new data with [predict()].
+#' fitted two-stage pipeline. Predict values for new data with [predict()].
 #'
 #' @slot specs the [ArgSpecs-class] the ensemble was fit from
 #' @slot kernelSamples the [KernelSamples] CV split (stage 1)
@@ -608,6 +521,10 @@ setClass(
 #'   `kernelLambdas@kernelModels`? `FALSE` (default) discards them (they are
 #'   diagnostic only; prediction uses the bootstrap models), keeping the fitted
 #'   object small. Set `TRUE` to inspect the stage-1 models.
+#' @param store.resamples keep the resample matrices (`kernelSamples@data` fold
+#'   matrices and `bootSamples@bootData` bootstrap index matrices)? `FALSE`
+#'   (default) clears them after fitting (they are diagnostic only; prediction
+#'   uses only `specs` and `bootOmegas`). Set `TRUE` to inspect the splits.
 #'
 #' @returns a RandomMachines object.
 #' @export
@@ -617,7 +534,8 @@ setClass(
 #' specs <- randomMachines:::.build_specs(iris, Species ~ ., task = "multiclass")
 #' RandomMachines(specs)
 #' }
-RandomMachines <- function(specs, K = 1, store.cv.models = FALSE) {
+RandomMachines <- function(specs, K = 1, store.cv.models = FALSE,
+                           store.resamples = FALSE) {
 
   ## Per-kernel ksvm call templates and the resolved training data are the
   ## inputs every downstream stage shares.
@@ -636,6 +554,9 @@ RandomMachines <- function(specs, K = 1, store.cv.models = FALSE) {
     splitfun  = kfold_cv,
     splitargs = list(n = nrow(data), K = K, y = strat_y)
   )
+  ## The stratification vector duplicates a column of specs@data; drop it from
+  ## the stored splitargs so a saved model does not serialise the response twice.
+  kernelSamples@splitargs["y"] <- NULL
 
   kernelLambdas <- KernelLambdas(
     specs           = specs,
@@ -658,6 +579,13 @@ RandomMachines <- function(specs, K = 1, store.cv.models = FALSE) {
     svmcalls = svmcalls,
     lambdas  = kernelLambdas@kernelLambdas
   )
+
+  ## Resample matrices are diagnostic only (prediction reads specs +
+  ## bootOmegas); clear them unless the caller opts in.
+  if (!isTRUE(store.resamples)) {
+    kernelSamples@data   <- list()
+    bootSamples@bootData <- list()
+  }
 
   new(
     "RandomMachines",

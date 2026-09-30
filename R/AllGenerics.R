@@ -1,9 +1,9 @@
 #' Kernel selection probabilities (lambdas) from per-kernel metrics
 #'
 #' Dispatches on the [ArgSpecs-class] spec so the normalization pipeline can be
-#' specialised per task if needed. The base method (on `ArgSpecs`) min-max scales
-#' the metrics, applies the spec's pure `lambdaFunction` (with `lambdaArgs`), and
-#' projects the result onto the probability simplex (sums to 1).
+#' specialised per task if needed. The base method (on `ArgSpecs`) applies the
+#' spec's pure `lambdaFunction` (with `lambdaArgs`) and projects the result onto
+#' the probability simplex (sums to 1).
 #'
 #' @param specs an ArgSpecs object
 #' @param metrics numeric vector of per-kernel metrics
@@ -14,26 +14,15 @@ setGeneric("lambdaCalc", function(specs, metrics) standardGeneric("lambdaCalc"))
 #' Per-model weights (omegas) from bootstrap metrics
 #'
 #' Dispatches on the [ArgSpecs-class] spec. The base method (on `ArgSpecs`)
-#' min-max scales the metrics, applies the spec's pure `omegaFunction` (with
-#' `omegaArgs`), and min-max scales the result to `[0, 1]` (the final Sum=1
-#' voting weights are formed at predict time by `.normalize_weights`).
+#' applies the spec's pure `omegaFunction` (with `omegaArgs`) and projects the
+#' result onto the probability simplex; the predict-time renormalization of the
+#' stored omegas is then a defensive no-op.
 #'
 #' @param specs an ArgSpecs object
 #' @param metrics numeric vector of per-model metrics (length B)
 #' @return a numeric vector of per-model weights (omegas), length B
 #' @keywords internal
 setGeneric("omegaCalc", function(specs, metrics) standardGeneric("omegaCalc"))
-
-#' Build the per-kernel fitting calls for a specification
-#'
-#' Dispatches on the spec's `implementation`; `kernlab` is the only backend at
-#' present.
-#'
-#' @param object an ArgSpecs object
-#' @param ... reserved for future backends
-#' @return a list of fitting calls, one per kernel
-#' @keywords internal
-setGeneric("buildCall", function(object, ...) standardGeneric("buildCall"))
 
 #' Predict from a fitted kernel SVM according to task and probability mode
 #'
@@ -87,8 +76,8 @@ setGeneric("rmAggregate", function(specs, predictions, weights, ...) standardGen
 #' @param indexes (`BootSamples` method only) the length-B vector of
 #'   lambda-sampled kernel indices, one per bootstrap replicate
 #'
-#' @return per-kernel list of `list(fit, predict, metrics)` (`KernelSamples`), or
-#'   a single such list (`BootSamples`)
+#' @return per-kernel list of `list(fit, metrics)` (`KernelSamples`), or a
+#'   single such list (`BootSamples`)
 setGeneric("svmFit", function(samples, specs, svmcalls, metric_function, ...) standardGeneric("svmFit"))
 
 

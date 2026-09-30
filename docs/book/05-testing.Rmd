@@ -24,7 +24,8 @@ Beyond the happy path, the end-to-end tests stress the pipeline on:
   (minority recall), not merely that the majority baseline is beaten.
 - **Custom metrics.** User-supplied `function(truth, estimate)` metrics passed as
   `lambdaMetric`/`omegaMetric` for each task (balanced accuracy, MAE, log-loss), a
-  bare metric with no `direction` attribute (whose orientation check is skipped),
+  bare metric with no `direction` attribute (whose orientation is inferred
+  empirically),
   and an invalid metric rejected at construction.
 - **Ensemble size.** A range of `B` from 1 upward, checking the fitted object holds
   exactly `B` bootstrap models and that probabilistic output stays a distribution

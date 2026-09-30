@@ -22,17 +22,33 @@
 
 #' Direction of a metric: "maximize", "minimize", or NA
 #'
-#' Reads the `direction` attribute the built-in metrics carry (`.metric_accuracy`
-#' -> "maximize"; `.metric_rmse` / `.metric_brier` -> "minimize"). A bare
-#' user-supplied `function(truth, estimate)` without one returns `NA`, so the
-#' orientation check is simply skipped for it.
+#' An explicit `direction` attribute wins: it is the author's declaration, and
+#' the built-in metrics carry one (`.metric_accuracy` -> "maximize";
+#' `.metric_rmse` / `.metric_brier` -> "minimize"). Without one, the direction
+#' is inferred empirically: the metric is scored on a clearly good and a
+#' clearly bad estimate of the same truth (shape-appropriate probes supplied by
+#' the subclass validities), and the side the better score falls on gives the
+#' orientation. Returns `NA` only when neither source resolves (no attribute,
+#' and the probe errors, ties, or is not given), in which case the orientation
+#' check is skipped.
 #'
 #' @param metric a metric function (built-in or user-supplied)
+#' @param truth toy response of the task's prediction shape
+#' @param good,bad toy estimates of that shape, one clearly closer to `truth`
+#'   than the other
 #' @return one of "maximize" / "minimize" / `NA_character_`
 #' @noRd
-.metric_direction <- function(metric) {
+.metric_direction <- function(metric, truth = NULL, good = NULL, bad = NULL) {
   d <- attr(metric, "direction")
-  if (is.null(d)) NA_character_ else d
+  if (!is.null(d)) return(d)
+  if (is.null(truth)) return(NA_character_)
+  scores <- tryCatch(c(metric(truth, good), metric(truth, bad)),
+                     error = function(e) NULL)
+  if (is.null(scores) || !is.numeric(scores) || length(scores) != 2L ||
+      !all(is.finite(scores)) || scores[1] == scores[2]) {
+    return(NA_character_)
+  }
+  if (scores[1] > scores[2]) "maximize" else "minimize"
 }
 
 #' Monotonic orientation of a weight function: "maximize", "minimize", or NA
@@ -63,50 +79,42 @@
 
 #' Project a raw weight vector onto the probability simplex (sums to 1)
 #'
-#' Zeroes negative entries, then divides by the sum. A negative raw weight
-#' means "worse than chance" under every built-in transform (e.g. a
+#' Zeroes non-finite and negative entries, then divides by the sum. A negative
+#' raw weight means "worse than chance" under every built-in transform (e.g. a
 #' below-0.5-accuracy kernel through [logit_weights()]), and Eq. (8) of Ara
 #' et al. (2021) wants such a kernel selected with probability next to zero
 #' while the remaining kernels keep their relative weights. Falls back to
 #' uniform weights when nothing positive remains. This is the shared
 #' post-normalization of the lambda and omega stages (the hard "sums to 1"
-#' rule), lifted out of the individual score functions.
+#' rule), and the predict-time normalizer that turns the stored omegas into the
+#' actual sum=1 voting weights (a defensive no-op there, unless a misbehaving
+#' user-supplied omega function needs rescuing).
 #'
-#' @param l numeric vector of raw weights (any sign)
+#' @param w numeric vector of raw weights (any sign; non-finite tolerated)
 #' @return numeric vector of the same length summing to 1
 #' @noRd
-.to_simplex <- function(l) {
-  l[l < 0] <- 0
-  total <- sum(l)
-  if (!is.finite(total) || total == 0) {
-    return(rep(1 / length(l), length(l)))
+.to_simplex <- function(w) {
+  w[!is.finite(w) | w < 0] <- 0
+  total <- sum(w)
+  if (total == 0) {
+    return(rep(1 / length(w), length(w)))
   }
-  l / total
+  w / total
 }
 
-#' Default (metric direction aware) weight functions for a task/prob cell
-#'
-#' The selection grid, as a plain lookup (default resolution is eager, so this
-#' feeds `.build_specs()` before the spec is constructed). Each cell pairs a
-#' lambda (probability) transform with an omega (weight) transform whose
-#' orientation matches that cell's default metric.
-#'
-#' @param task "regression", "binary" or "multiclass"
-#' @param prob logical; probabilistic classification?
-#' @return `list(lambda = <fn>, omega = <fn>)`
-#' @noRd
-.default_weight_fns <- function(task, prob) {
-  if (identical(task, "regression")) {
-    list(lambda = softmax_weights,   omega = softmax_weights)    # minimize (rmse)
-  } else if (isTRUE(prob)) {
-    list(lambda = inv_logit_weights, omega = inv_sq_weights)     # minimize (brier)
-  } else {
-    list(lambda = logit_weights,     omega = inv_sq_gap_weights) # maximize (accuracy)
-  }
-}
-# The metric half of the grid lives in metrics.R (`.default_metric`).
+# The selection grid (default metric plus its orientation-matched lambda/omega
+# transforms) lives in metrics.R (`.task_defaults`).
 
 # ---- Exported weight / probability transforms (pure) -----------------------
+
+#' Clamp scores into the open unit interval (the shared eps domain guard)
+#'
+#' @param x numeric vector of scores
+#' @return `x` with entries clamped into `[eps, 1 - eps]`
+#' @noRd
+.clamp01 <- function(x, eps = 1e-8) {
+  pmin(pmax(x, eps), 1 - eps)
+}
 
 #' Logit weights (maximize-oriented)
 #'
@@ -121,8 +129,7 @@
 #' @examples
 #' logit_weights(c(0.6, 0.8, 0.95))
 logit_weights <- function(x) {
-  eps <- 1e-8
-  x <- pmin(pmax(x, eps), 1 - eps)
+  x <- .clamp01(x)
   log(x / (1 - x))
 }
 
@@ -138,8 +145,7 @@ logit_weights <- function(x) {
 #' @examples
 #' inv_logit_weights(c(0.1, 0.3, 0.05))
 inv_logit_weights <- function(x) {
-  eps <- 1e-8
-  x <- pmin(pmax(x, eps), 1 - eps)
+  x <- .clamp01(x)
   log((1 - x) / x)
 }
 
@@ -180,8 +186,7 @@ softmax_weights <- function(x, beta = 2) {
 #' @examples
 #' inv_sq_gap_weights(c(0.6, 0.8, 0.95))
 inv_sq_gap_weights <- function(x) {
-  eps <- 1e-8
-  x <- pmin(pmax(x, eps), 1 - eps)
+  x <- .clamp01(x)
   1 / ((1 - x)^2)
 }
 
@@ -198,30 +203,6 @@ inv_sq_gap_weights <- function(x) {
 #' @examples
 #' inv_sq_weights(c(0.1, 0.3, 0.05))
 inv_sq_weights <- function(x) {
-  eps <- 1e-8
-  x <- pmin(pmax(x, eps), 1 - eps)
+  x <- .clamp01(x)
   1 / (x^2)
-}
-
-# ---- Predict-time safety net -----------------------------------------------
-
-#' Normalise a vector of ensemble weights to sum to 1
-#'
-#' Coerces any non-finite or negative entries to 0, then scales the vector to
-#' sum to 1. When nothing positive remains (total is 0), falls back to uniform
-#' weights. The omega stage already projects onto the simplex, so at predict this
-#' is a defensive normaliser that turns the stored omegas into the actual sum=1
-#' voting weights (and rescues a misbehaving user-supplied omega function).
-#'
-#' @param w numeric vector of raw weights (e.g. `BootOmegas@bootOmegas`)
-#' @return a numeric vector of the same length summing to 1
-#' @noRd
-.normalize_weights <- function(w) {
-  w[!is.finite(w) | w < 0] <- 0
-  total <- sum(w)
-  if (total == 0) {
-    rep(1 / length(w), length(w))
-  } else {
-    w / total
-  }
 }
