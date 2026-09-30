@@ -34,15 +34,6 @@
 }
 
 
-#' Response variable name of a built ksvm call
-#'
-#' @param svmcall a call produced by `.call_builder()`
-#' @return the name of the response (LHS of the formula) as a string
-#' @noRd
-.response_name <- function(svmcall) {
-  all.vars(svmcall[["x"]])[1]
-}
-
 #' Predictor variable names required by a spec's formula
 #'
 #' Returns the names of the right-hand-side predictors, or `character(0)` for a
@@ -68,27 +59,26 @@
 #' @param train_idx row selector for the training partition
 #' @param test_idx row selector for the held-out partition
 #' @param metric_function metric applied to (truth, held-out prediction)
-#' @param response name of the response column (constant per pipeline; hoisted
-#'   by the [svmFit()] methods)
+#' @param y the model response for every row of `data` (e.g. `log(y)` for a
+#'   `log(y) ~ .` formula), from `.resolve_response()`; constant per pipeline,
+#'   so the [svmFit()] methods resolve it once
 #' @return list(fit, metric)
 #' @noRd
 .fit_one <- function(specs, svmcall, data, train_idx, test_idx, metric_function,
-                     response) {
-  train <- data[train_idx, ]
-
+                     y) {
   # Guard: a classification partition with a single class cannot train an SVM
   # (kernlab errors cryptically). Surface an actionable message instead.
   if (specs@task %in% c("binary", "multiclass")) {
-    ytr <- train[[response]]
+    ytr <- y[train_idx]
     if (length(unique(ytr[!is.na(ytr)])) < 2L) {
       stop("a training partition contains a single class; cannot fit a ",
            "classifier. Consider a stratified resample.", call. = FALSE)
     }
   }
 
-  model  <- eval(rlang::call_modify(svmcall, data = train, fit = FALSE))
+  model  <- eval(rlang::call_modify(svmcall, data = data[train_idx, ], fit = FALSE))
   pred   <- svmPredict(specs, model, data[test_idx, ])
-  metric <- metric_function(data[test_idx, response], pred)
+  metric <- metric_function(y[test_idx], pred)
   list(fit = model, metric = metric)
 }
 

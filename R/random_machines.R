@@ -70,7 +70,10 @@ random_machines <- function(..., K = 1, store.cv.models = FALSE,
 #'   grid default: [logit_weights()] (hard classification), [inv_logit_weights()]
 #'   (probabilistic classification) or [softmax_weights()] (regression).
 #' @param lambdaArgs list of pre-bound arguments for `lambdaFunction` (e.g.
-#'   `list(beta = 2)` for [softmax_weights()]); default `list()`.
+#'   `list(beta = 2)` for [softmax_weights()]); default `list()`. With the
+#'   default `lambdaFunction` and more than two classes, `chance` is bound to
+#'   the class count (`1/k` for accuracy, `1 - 1/k` for the Brier score) unless
+#'   supplied here.
 #' @param omegaMetric metric used to score models in the omega stage; `NULL`
 #'   (default) uses the same grid as `lambdaMetric`.
 #' @param omegaFunction pure transform mapping model metrics to
@@ -102,14 +105,20 @@ random_machines <- function(..., K = 1, store.cv.models = FALSE,
                          omegaFunction  = NULL,
                          omegaArgs      = list()) {
 
-  ## --- Resolve the model frame -----------------------------------------
-  ## Store the resolved model frame (response plus the columns `formula` needs)
-  ## so the spec is self-contained (no symbol, no dependence on a global that
-  ## might be renamed or dropped before predict/reload).
+  ## --- Resolve the training data ---------------------------------------
+  ## Store the raw variables `formula` needs (not its model frame, whose
+  ## columns are named after terms such as `log(x)` and could not be re-fit or
+  ## predicted from), so the spec is self-contained: no symbol, no dependence
+  ## on a global that might be renamed or dropped before predict/reload. Rows
+  ## are the ones the model frame keeps (its `na.action` drops incomplete rows).
   if (!is.data.frame(data)) {
     stop("`data` must be a data.frame.", call. = FALSE)
   }
-  mf <- stats::model.frame(formula, data = data)
+  frame   <- stats::model.frame(formula, data = data)
+  vars    <- if ("." %in% all.vars(formula)) names(data) else all.vars(formula)
+  mf      <- data[, vars, drop = FALSE]
+  dropped <- attr(frame, "na.action")
+  if (!is.null(dropped)) mf <- mf[-dropped, , drop = FALSE]
 
   ## Resolve which ArgSpecs subclass to build from (task, prob). `prob` is now a
   ## type, not a runtime branch: probabilistic classification builds a `*Prob`
@@ -129,7 +138,17 @@ random_machines <- function(..., K = 1, store.cv.models = FALSE,
   defs <- .task_defaults(task, prob)
   if (is.null(lambdaMetric))   lambdaMetric   <- defs$metric
   if (is.null(omegaMetric))    omegaMetric    <- defs$metric
-  if (is.null(lambdaFunction)) lambdaFunction <- defs$lambda
+  if (is.null(lambdaFunction)) {
+    lambdaFunction <- defs$lambda
+    ## The default lambda transforms zero out worse-than-chance kernels, and
+    ## chance depends on the class count: accuracy 1/k, sum-form Brier
+    ## 1 - 1/k. Both are 0.5 for k = 2 (the transforms' default, Eq. (8)), so
+    ## only k > 2 needs binding. An explicit user `chance` wins.
+    k <- if (task == "regression") 2L else length(unique(stats::model.response(frame)))
+    if (k > 2L && is.null(lambdaArgs$chance)) {
+      lambdaArgs$chance <- if (isTRUE(prob)) 1 - 1 / k else 1 / k
+    }
+  }
   if (is.null(omegaFunction))  omegaFunction  <- defs$omega
 
   new(

@@ -67,28 +67,10 @@ test_that(".task_defaults pairs each cell's metric with matching transforms", {
   expect_identical(.task_defaults("regression", FALSE)$metric, .metric_rmse)
   expect_identical(.task_defaults("regression", FALSE)$lambda, softmax_weights)
   expect_identical(.task_defaults("regression", FALSE)$omega,  softmax_weights)
-  # built-in metrics carry an orientation for the validity check
-  expect_identical(.metric_direction(.metric_accuracy), "maximize")
-  expect_identical(.metric_direction(.metric_brier),    "minimize")
-  expect_identical(.metric_direction(.metric_rmse),     "minimize")
 })
 
-# ---- Pipeline: lambdaCalc / omegaCalc (both simplex) ------------------------
-
-test_that("lambdaCalc and omegaCalc both project onto the simplex", {
-  specs   <- .build_specs(iris_binary(), Species ~ ., task = "binary")
-  metrics <- c(0.6, 0.75, 0.9)
-
-  lam <- lambdaCalc(specs, metrics)
-  expect_length(lam, 3)
-  expect_equal(sum(lam), 1)             # hard restriction
-  expect_true(all(lam >= 0))
-
-  om <- omegaCalc(specs, metrics)
-  expect_length(om, 3)
-  expect_equal(sum(om), 1)              # direct normalization (Eq. (2) shape);
-  expect_true(all(om > 0))              # no model is zeroed out
-})
+# lambdaCalc()/omegaCalc() project onto the simplex: the paper-fidelity tests
+# below check their exact normalized outputs.
 
 # ---- Regression paper fidelity (Ara et al. 2022, ESWA 202:117107) -----------
 
@@ -142,6 +124,42 @@ test_that("binary omegas are normalized 1/(1 - acc)^2 (Eq. (9))", {
   acc   <- c(0.9, 0.8, 0.7)
   ref   <- (1 / (1 - acc)^2) / sum(1 / (1 - acc)^2)
   expect_equal(omegaCalc(specs, acc), ref)
+})
+
+# ---- Chance level (multiclass extension; binary unchanged) ------------------
+
+test_that("chance-centered logit: default 0.5 is the paper's transform", {
+  acc <- c(0.9, 0.8, 0.7, 0.6)
+  expect_equal(logit_weights(acc), log(acc / (1 - acc)))
+  expect_equal(inv_logit_weights(1 - acc), log(acc / (1 - acc)))
+  # a chance-level score maps to exactly 0
+  expect_equal(logit_weights(0.2, chance = 0.2), 0)
+  expect_equal(inv_logit_weights(2 / 3, chance = 2 / 3), 0)
+})
+
+test_that("5-class lambdas discriminate kernels that are below .5 but above chance", {
+  specs <- .build_specs(.make_k_class(5), y ~ ., task = "multiclass")
+  lam   <- lambdaCalc(specs, c(0.45, 0.40, 0.35, 0.30))  # chance = 0.2
+  expect_true(all(diff(lam) < 0))                        # ordered, not uniform
+  expect_equal(sum(lam), 1)
+  # a below-chance kernel is still zeroed
+  expect_equal(lambdaCalc(specs, c(0.45, 0.15))[2], 0)
+})
+
+test_that("3-class probabilistic lambdas keep better-than-chance Brier kernels", {
+  specs <- .build_specs(iris, Species ~ ., task = "multiclass", prob = TRUE)
+  # uniform prediction scores 2/3; all four kernels beat it but exceed 0.5
+  lam <- lambdaCalc(specs, c(0.55, 0.60, 0.62, 0.64))
+  expect_true(all(lam > 0))
+  expect_true(all(diff(lam) < 0))
+  # at or above chance -> zero
+  expect_equal(lambdaCalc(specs, c(0.3, 0.7))[2], 0)
+})
+
+test_that("inv_sq_weights keeps the ordering of Brier scores above 1", {
+  w <- inv_sq_weights(c(0.5, 1.2, 1.8))
+  expect_true(all(is.finite(w)))
+  expect_true(all(diff(w) < 0))
 })
 
 # ---- Orientation validity ---------------------------------------------------

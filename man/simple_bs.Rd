@@ -4,12 +4,18 @@
 \alias{simple_bs}
 \title{Simple bootstrap resampling}
 \usage{
-simple_bs(indexes, B)
+simple_bs(indexes, B, y = NULL, max_tries = 100L)
 }
 \arguments{
 \item{indexes}{integer vector of row indices to resample}
 
 \item{B}{number of bootstrap resamples to generate}
+
+\item{y}{optional response, indexed by the values in \code{indexes}; when
+supplied, resamples whose in-bag rows hold fewer than two classes are
+redrawn (classification)}
+
+\item{max_tries}{maximum redraws per resample before giving up}
 }
 \value{
 \code{list(train, test)}: \code{train} holds the resampled indices
@@ -19,6 +25,13 @@ simple_bs(indexes, B)
 Draws \code{B} bootstrap resamples of \code{indexes}, returning the in-sample
 (\code{train}) and out-of-bag (\code{test}) memberships as two matrices, one column
 per resample.
+}
+\details{
+A resample is redrawn when it could not produce a usable model: when its
+out-of-bag set is empty (nothing to score it on) or, when \code{y} is given, when
+its in-bag draw holds a single class (no classifier can be fit). Usable
+resamples are kept as drawn, so the result is a bootstrap conditioned on
+usability.
 }
 \examples{
 simple_bs(indexes = 1:10, B = 5)

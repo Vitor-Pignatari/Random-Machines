@@ -4,20 +4,28 @@
 \alias{logit_weights}
 \title{Logit weights (maximize-oriented)}
 \usage{
-logit_weights(x)
+logit_weights(x, chance = 0.5)
 }
 \arguments{
-\item{x}{numeric vector of scores in \verb{[0, 1]} (e.g. accuracy, Brier)}
+\item{x}{numeric vector of scores in \verb{[0, 1]} (e.g. accuracy)}
+
+\item{chance}{the score of an uninformative model. Default \code{0.5} (binary
+accuracy); \code{\link[=random_machines]{random_machines()}} binds \code{1/k} for hard \code{k}-class tasks.}
 }
 \value{
 a raw numeric weight vector (not normalized)
 }
 \description{
-Shifted-logit transform for scores in \verb{(0, 1)} where higher is better (e.g.
-accuracy). Increasing in \code{x}. Applies no normalization: the lambda and omega
-stages project the result onto the simplex (see \code{\link[=lambdaCalc]{lambdaCalc()}} /
-\code{\link[=omegaCalc]{omegaCalc()}}). \code{x} is \code{eps}-clamped into \verb{(0, 1)} as a domain guard.
+Logit transform for scores in \verb{(0, 1)} where higher is better (e.g.
+accuracy), centered so a chance-level score maps to 0:
+\code{logit(x) - logit(chance)}. Increasing in \code{x}. A below-chance score gets a
+negative weight, which the pipeline's simplex projection zeroes (Eq. (8) of
+Ara et al. 2021, whose binary chance level is the default \code{0.5}). Applies
+no normalization: the lambda and omega stages project the result onto the
+simplex (see \code{\link[=lambdaCalc]{lambdaCalc()}} / \code{\link[=omegaCalc]{omegaCalc()}}). \code{x} is \code{eps}-clamped into
+\verb{(0, 1)} as a domain guard.
 }
 \examples{
 logit_weights(c(0.6, 0.8, 0.95))
+logit_weights(c(0.3, 0.45), chance = 1/5)  # 5 classes: both beat chance
 }

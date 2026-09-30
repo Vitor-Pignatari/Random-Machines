@@ -8,6 +8,12 @@ iris_pair <- function(a = "setosa", b = "versicolor") {
 }
 iris_binary <- function() iris_pair()
 
+# A deterministic k-class data frame (10 rows per class), for specs that need
+# a class count other than iris's three.
+.make_k_class <- function(k) {
+  data.frame(x = seq_len(10 * k), y = factor(rep(letters[seq_len(k)], each = 10)))
+}
+
 # Shuffle a data frame and split into train (first `n_train` rows) / test (rest).
 # Call after set.seed() in the test to keep the split reproducible.
 shuffle_split <- function(df, n_train) {
@@ -30,16 +36,17 @@ fit_first <- function(specs, data) {
   eval(rlang::call_modify(calls[[1]], data = data, fit = FALSE))
 }
 
+# B bootstrap resamples of every row of `data`.
+boot_samples <- function(data, B) {
+  BootSamples(trainData = data,
+              bootArgs  = list(indexes = seq_len(nrow(data)), B = B))
+}
+
 # Build a BootOmegas ensemble for a given spec + training data. `lambdas`
 # defaults to uniform kernel-selection weights.
 build_ensemble <- function(specs, data,
                            lambdas = rep(1 / length(specs@kernels),
                                          length(specs@kernels))) {
-  svmcalls <- .call_builder(specs)
-  boot <- BootSamples(
-    trainData = data,
-    bootFun   = simple_bs,
-    bootArgs  = list(indexes = seq_len(nrow(data)), B = specs@B)
-  )
-  BootOmegas(specs, bootData = boot, svmcalls = svmcalls, lambdas = lambdas)
+  BootOmegas(specs, bootData = boot_samples(data, specs@B),
+             svmcalls = .call_builder(specs), lambdas = lambdas)
 }

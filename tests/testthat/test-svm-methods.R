@@ -1,60 +1,34 @@
-# svmPredict() dispatch is exercised directly on a real kernlab model via the
-# shared fit_first() helper (see helper-fixtures.R).
+# svmPredict() dispatch, exercised directly on a real kernlab model via the
+# shared fit_first() helper (see helper-fixtures.R): each spec subclass returns
+# the prediction shape its rmAggregate() method expects.
 
-test_that("svmPredict: binary majority-vote returns a class factor", {
-  iris_bin <- iris_binary()
-  specs <- .build_specs(iris_bin, Species ~ ., task = "binary", prob = FALSE)
-
-  pred <- svmPredict(specs, fit_first(specs, iris_bin), iris_bin)
-
-  expect_s4_class(specs, "ArgSpecsBinary")
-  expect_s3_class(pred, "factor")
-  expect_length(pred, nrow(iris_bin))
-  expect_setequal(levels(pred), levels(iris_bin$Species))
-})
-
-test_that("svmPredict: binary probabilistic returns an n x 2 probability matrix", {
-  iris_bin <- iris_binary()
-  specs <- .build_specs(iris_bin, Species ~ ., task = "binary", prob = TRUE)
-
-  pred <- svmPredict(specs, fit_first(specs, iris_bin), iris_bin)
-
-  expect_true(is.matrix(pred))
-  expect_equal(dim(pred), c(nrow(iris_bin), 2))
-  expect_setequal(colnames(pred), levels(iris_bin$Species))
-  expect_true(all(abs(rowSums(pred) - 1) < 1e-6))
-})
-
-test_that("svmPredict: multiclass majority-vote returns a class factor", {
-  specs <- .build_specs(iris, Species ~ ., task = "multiclass", prob = FALSE)
-
-  pred <- svmPredict(specs, fit_first(specs, iris), iris)
-
-  expect_s3_class(pred, "factor")
-  expect_length(pred, nrow(iris))
-})
-
-test_that("svmPredict: multiclass probabilistic returns an n x k probability matrix", {
-  specs <- .build_specs(iris, Species ~ ., task = "multiclass", prob = TRUE)
-
-  pred <- svmPredict(specs, fit_first(specs, iris), iris)
-
-  expect_true(is.matrix(pred))
-  expect_equal(dim(pred), c(nrow(iris), 3))
-  expect_setequal(colnames(pred), levels(iris$Species))
-  expect_true(all(abs(rowSums(pred) - 1) < 1e-6))
-})
-
-test_that("svmPredict: regression returns a numeric vector", {
-  specs <- .build_specs(
-    mtcars, mpg ~ ., task = "regression",
-    lambdaMetric = .metric_rmse,
-    omegaMetric  = .metric_rmse
+test_that("svmPredict returns the shape each spec subclass needs", {
+  cases <- list(
+    list(data = iris_binary(), formula = Species ~ ., task = "binary",     prob = FALSE),
+    list(data = iris_binary(), formula = Species ~ ., task = "binary",     prob = TRUE),
+    list(data = iris,          formula = Species ~ ., task = "multiclass", prob = FALSE),
+    list(data = iris,          formula = Species ~ ., task = "multiclass", prob = TRUE),
+    list(data = mtcars,        formula = mpg ~ .,     task = "regression", prob = FALSE)
   )
+  for (cs in cases) {
+    specs <- .build_specs(cs$data, cs$formula, task = cs$task, prob = cs$prob)
+    pred  <- svmPredict(specs, fit_first(specs, cs$data), cs$data)
+    label <- paste(cs$task, if (cs$prob) "prob" else "")
+    n     <- nrow(cs$data)
 
-  pred <- svmPredict(specs, fit_first(specs, mtcars), mtcars)
-
-  expect_s4_class(specs, "ArgSpecsReg")
-  expect_type(pred, "double")
-  expect_length(pred, nrow(mtcars))
+    if (cs$task == "regression") {
+      expect_type(pred, "double")
+      expect_length(pred, n)
+    } else if (cs$prob) {
+      lev <- levels(cs$data$Species)
+      expect_true(is.matrix(pred), label = label)
+      expect_equal(dim(pred), c(n, length(lev)), label = label)
+      expect_setequal(colnames(pred), lev)
+      expect_true(all(abs(rowSums(pred) - 1) < 1e-6), label = label)
+    } else {
+      expect_s3_class(pred, "factor")
+      expect_length(pred, n)
+      expect_setequal(levels(pred), levels(cs$data$Species))
+    }
+  }
 })

@@ -1,14 +1,13 @@
-# svmFit() dispatches the two fitting strategies on the resample objects
+# svmFit() dispatches the two fitting strategies on the resample objects.
+
 test_that("svmFit(KernelSamples) fits every kernel across every fold", {
-  iris_bin <- iris_binary()
-  specs    <- .build_specs(iris_bin, Species ~ ., task = "binary", B = 10)
+  d        <- iris_binary()
+  specs    <- .build_specs(d, Species ~ ., task = "binary", B = 10)
   svmcalls <- .call_builder(specs)
 
-  ksamples <- kernel_samples(iris_bin, K = 4, y = iris_bin$Species)
+  perkernel <- svmFit(kernel_samples(d, K = 4, y = d$Species), specs, svmcalls,
+                      specs@lambdaMetric)
 
-  perkernel <- svmFit(ksamples, specs, svmcalls, specs@lambdaMetric)
-
-  expect_length(perkernel, length(svmcalls))
   expect_named(perkernel, names(svmcalls))
   # each kernel entry has fit/metrics, one metric per fold
   expect_named(perkernel[[1]], c("fit", "metrics"))
@@ -16,21 +15,13 @@ test_that("svmFit(KernelSamples) fits every kernel across every fold", {
 })
 
 test_that("svmFit(BootSamples) fits one kernel per bootstrap replicate", {
-  iris_bin <- iris_binary()
-  specs    <- .build_specs(iris_bin, Species ~ ., task = "binary", B = 10)
+  d        <- iris_binary()
+  specs    <- .build_specs(d, Species ~ ., task = "binary", B = 10)
   svmcalls <- .call_builder(specs)
-  data     <- specs@data
 
-  boot <- BootSamples(
-    trainData = data,
-    bootFun   = simple_bs,
-    bootArgs  = list(indexes = seq_len(nrow(data)), B = specs@B)
-  )
-
-  probs <- seq_along(svmcalls) / sum(seq_along(svmcalls))
-  idx   <- sample(seq_along(svmcalls), prob = probs,
-                  replace = TRUE, size = specs@B)
-  reps <- svmFit(boot, specs, svmcalls, specs@omegaMetric, indexes = idx)
+  idx  <- sample(seq_along(svmcalls), size = specs@B, replace = TRUE)
+  reps <- svmFit(boot_samples(specs@data, specs@B), specs, svmcalls,
+                 specs@omegaMetric, indexes = idx)
 
   expect_named(reps, c("fit", "metrics"))
   expect_length(reps$fit, specs@B)

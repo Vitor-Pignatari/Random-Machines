@@ -36,13 +36,6 @@ test_that("a metric that does not return a single finite numeric is rejected", {
   )
 })
 
-test_that("a valid user-supplied metric is accepted", {
-  my_acc <- function(truth, estimate) mean(as.character(truth) == as.character(estimate))
-  specs <- .build_specs(iris_binary(), Species ~ ., task = "binary",
-                        lambdaMetric = my_acc, omegaMetric = my_acc)
-  expect_identical(specs@lambdaMetric, my_acc)
-})
-
 test_that("a user-supplied probabilistic metric receives the probability matrix", {
   # a custom Brier variant over the full probability matrix
   my_brier <- function(truth, estimate) {

@@ -7,7 +7,7 @@
 inv_sq_weights(x)
 }
 \arguments{
-\item{x}{numeric vector of error metrics in \verb{[0, 1]} (e.g. Brier)}
+\item{x}{numeric vector of non-negative error metrics (e.g. the Brier score)}
 }
 \value{
 a finite, positive raw numeric weight vector (not normalized)
@@ -16,7 +16,8 @@ a finite, positive raw numeric weight vector (not normalized)
 \code{1 / x^2}: weight grows as the metric approaches 0, so the best model (lowest
 error/score) dominates. Minimize-oriented, decreasing in \code{x}. Applies no
 normalization; \code{x} is \code{eps}-clamped above 0 so a perfect (zero) score stays
-finite.
+finite. There is no upper clamp, so scores above 1 (a Brier score spans
+\verb{[0, 2]}) keep their ordering.
 }
 \examples{
 inv_sq_weights(c(0.1, 0.3, 0.05))

@@ -15,23 +15,9 @@
 # ---- fixtures ---------------------------------------------------------------
 
 # Deterministic Gaussian blobs -> well-separated classes with a strong signal.
-.make_blobs <- function(seed, n_per, centers, sd = 0.8) {
-  set.seed(seed)
-  parts <- lapply(seq_along(centers), function(i) {
-    ctr <- centers[[i]]
-    data.frame(x1 = rnorm(n_per, ctr[1], sd),
-               x2 = rnorm(n_per, ctr[2], sd),
-               y  = letters[i])
-  })
-  out <- do.call(rbind, parts)
-  out$y <- factor(out$y)
-  out
-}
-blobs_binary <- .make_blobs(101, 60, list(c(0, 0), c(4, 4)))
-
-# Well-separated blobs with unequal group sizes, for the imbalanced-class tests.
-# `counts` gives the number of points per centre, so the last class is rare.
-.make_imbalanced <- function(seed, counts, centers, sd = 0.8) {
+# `counts` gives the number of points per centre; unequal counts make the
+# later classes rare (the imbalanced-class tests).
+.make_blobs <- function(seed, counts, centers, sd = 0.8) {
   set.seed(seed)
   parts <- lapply(seq_along(centers), function(i) {
     ctr <- centers[[i]]
@@ -43,10 +29,9 @@ blobs_binary <- .make_blobs(101, 60, list(c(0, 0), c(4, 4)))
   out$y <- factor(out$y)
   out
 }
-imb_binary <- .make_imbalanced(201, c(120, 20), list(c(0, 0), c(5, 5)))       # ~86/14
-imb_multi  <- .make_imbalanced(202, c(100, 40, 15), list(c(0, 0), c(6, 0), c(3, 6)))
-
-# iris_pair() is provided by helper-fixtures.R.
+blobs_binary <- .make_blobs(101, c(60, 60), list(c(0, 0), c(4, 4)))
+imb_binary   <- .make_blobs(201, c(120, 20), list(c(0, 0), c(5, 5)))       # ~86/14
+imb_multi    <- .make_blobs(202, c(100, 40, 15), list(c(0, 0), c(6, 0), c(3, 6)))
 
 # Stratified holdout (keeps every class in train) for classification.
 .strat_holdout <- function(df, resp, p = 0.7) {
@@ -64,33 +49,36 @@ imb_multi  <- .make_imbalanced(202, c(100, 40, 15), list(c(0, 0), c(6, 0), c(3, 
 
 # ---- assertion runners ------------------------------------------------------
 
-check_hard <- function(df, formula, resp, task, seed, acc_floor, B = 25, K = 4, ...) {
+# Seed, hold out (stratified for classification), fit on the training part and
+# predict the held-out part. Returns the prediction and the held-out truth.
+.fit_predict <- function(df, formula, resp, task, prob, seed, B = 25, K = 4, ...) {
   set.seed(seed)
-  sp <- .strat_holdout(df, resp)
-  rm <- random_machines(sp$train, formula, task = task, prob = FALSE, B = B, K = K, ...)
+  sp <- if (task == "regression") .rand_holdout(df) else .strat_holdout(df, resp)
+  rm <- random_machines(sp$train, formula, task = task, prob = prob, B = B, K = K, ...)
+  list(pred = predict(rm, sp$test), truth = sp$test[[resp]])
+}
 
-  pred  <- predict(rm, sp$test)
-  truth <- sp$test[[resp]]
+check_hard <- function(df, formula, resp, task, seed, acc_floor, ...) {
+  out   <- .fit_predict(df, formula, resp, task, prob = FALSE, seed = seed, ...)
+  pred  <- out$pred
+  truth <- out$truth
 
   expect_s3_class(pred, "factor")
-  expect_length(pred, nrow(sp$test))
+  expect_length(pred, length(truth))
   expect_true(all(as.character(truth) %in% levels(pred)))
 
   acc <- mean(as.character(pred) == as.character(truth))
   expect_gte(acc, acc_floor)                          # dataset-appropriate skill
 }
 
-check_prob <- function(df, formula, resp, task, seed, acc_floor, B = 25, K = 4, ...) {
-  set.seed(seed)
-  sp <- .strat_holdout(df, resp)
-  rm <- random_machines(sp$train, formula, task = task, prob = TRUE, B = B, K = K, ...)
-
-  P     <- predict(rm, sp$test)
-  truth <- as.character(sp$test[[resp]])
+check_prob <- function(df, formula, resp, task, seed, acc_floor, ...) {
+  out   <- .fit_predict(df, formula, resp, task, prob = TRUE, seed = seed, ...)
+  P     <- out$pred
+  truth <- as.character(out$truth)
 
   # probability matrix contract
   expect_true(is.matrix(P))
-  expect_equal(nrow(P), nrow(sp$test))
+  expect_equal(nrow(P), length(truth))
   expect_true(all(P >= -1e-8 & P <= 1 + 1e-8))
   expect_true(all(abs(rowSums(P) - 1) < 1e-6))
   expect_true(all(truth %in% colnames(P)))
@@ -105,32 +93,23 @@ check_prob <- function(df, formula, resp, task, seed, acc_floor, B = 25, K = 4, 
   expect_gt(mean(true_p), 1 / ncol(P))
 }
 
-check_reg <- function(df, formula, resp, seed, cor_floor, B = 25, K = 4, ...) {
-  set.seed(seed)
-  sp <- .rand_holdout(df)
-  rm <- random_machines(sp$train, formula, task = "regression", B = B, K = K, ...)
+check_reg <- function(df, formula, resp, seed, cor_floor, ...) {
+  out <- .fit_predict(df, formula, resp, "regression", prob = FALSE, seed = seed, ...)
 
-  pred  <- predict(rm, sp$test)
-  truth <- sp$test[[resp]]
+  expect_type(out$pred, "double")
+  expect_length(out$pred, length(out$truth))
+  expect_true(all(is.finite(out$pred)))
 
-  expect_type(pred, "double")
-  expect_length(pred, nrow(sp$test))
-  expect_true(all(is.finite(pred)))
-
-  expect_gt(stats::cor(pred, truth), cor_floor)
+  expect_gt(stats::cor(out$pred, out$truth), cor_floor)
 }
 
 # Imbalanced classification: assert the fit recovers the rare (minority) class
 # instead of collapsing onto the majority. `prob` toggles hard vs probabilistic
 # output; the minority label is the least frequent class in `df`.
-check_imbalanced <- function(df, formula, resp, task, prob, seed,
-                             B = 25, K = 4, min_recall = 0.5) {
-  set.seed(seed)
-  sp <- .strat_holdout(df, resp)
-  rm <- random_machines(sp$train, formula, task = task, prob = prob, B = B, K = K)
-
-  out   <- predict(rm, sp$test)
-  truth <- as.character(sp$test[[resp]])
+check_imbalanced <- function(df, formula, resp, task, prob, seed, min_recall = 0.5) {
+  fp    <- .fit_predict(df, formula, resp, task, prob = prob, seed = seed)
+  out   <- fp$pred
+  truth <- as.character(fp$truth)
   hard  <- if (prob) colnames(out)[max.col(out, ties.method = "first")] else as.character(out)
 
   minor  <- names(sort(table(df[[resp]])))[1]     # least frequent class
@@ -215,17 +194,22 @@ test_that("imbalanced multiclass (100/40/15): the rare class is recovered", {
   check_imbalanced(imb_multi, y ~ x1 + x2, "y", "multiclass", prob = FALSE, seed = 32)
 })
 
+test_that("small imbalanced data (12 vs 3) fits at the default ensemble size", {
+  # Plain bootstrap draws miss the rare class in ~3.5% of replicates (~97%
+  # chance of at least one at B = 100); such replicates are redrawn.
+  set.seed(34)
+  d <- data.frame(x1 = c(rnorm(12), rnorm(3, 5)), x2 = c(rnorm(12), rnorm(3, 5)),
+                  y  = factor(rep(c("a", "b"), c(12, 3))))
+  rm <- random_machines(d, y ~ ., task = "binary", B = 100)
+  expect_length(rm@bootOmegas@bootModels, 100)
+  expect_true(all(is.finite(rm@bootOmegas@bootMetrics)))
+})
+
 test_that("imbalanced binary, probabilistic: the minority class is recovered", {
   check_imbalanced(imb_binary, y ~ x1 + x2, "y", "binary", prob = TRUE, seed = 33)
 })
 
 # ---- custom metrics ---------------------------------------------------------
-
-test_that("hard classification accepts a custom balanced-accuracy metric", {
-  check_hard(iris_pair("setosa", "versicolor"), Species ~ ., "Species", "binary",
-             seed = 41, acc_floor = 0.9,
-             lambdaMetric = metric_balanced_acc, omegaMetric = metric_balanced_acc)
-})
 
 test_that("multiclass accepts a custom balanced-accuracy metric", {
   check_hard(iris, Species ~ ., "Species", "multiclass",
@@ -249,15 +233,6 @@ test_that("a custom metric with no direction attribute is accepted", {
   # (maximize, matching the default weight functions) and the fit works.
   check_hard(blobs_binary, y ~ x1 + x2, "y", "binary", seed = 45, acc_floor = 0.85,
              lambdaMetric = metric_bare_acc, omegaMetric = metric_bare_acc)
-})
-
-test_that("an invalid custom metric is rejected at construction", {
-  bad <- function(truth, estimate) c(1, 2)   # not a single numeric
-  expect_error(
-    random_machines(iris_binary(), Species ~ ., task = "binary", prob = FALSE,
-                    B = 10, lambdaMetric = bad, omegaMetric = bad),
-    "single finite numeric"
-  )
 })
 
 # ---- ensemble size (B) ------------------------------------------------------

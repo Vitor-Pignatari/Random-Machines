@@ -59,7 +59,7 @@ setMethod(
   "rmAggregate",
   signature(specs = "ArgSpecsClassifHard"),
   function(specs, predictions, weights, ...) {
-    lev   <- sort(unique(unlist(lapply(predictions, function(p) as.character(levels(p))))))
+    lev   <- levels(.resolve_response(specs))  # the training level order
     n     <- length(predictions[[1]])
     score <- matrix(0, nrow = n, ncol = length(lev), dimnames = list(NULL, lev))
     for (b in seq_along(predictions)) {
@@ -76,7 +76,7 @@ setMethod(
   "rmAggregate",
   signature(specs = "ArgSpecsClassifProb"),
   function(specs, predictions, weights, ...) {
-    lev <- sort(unique(unlist(lapply(predictions, colnames))))
+    lev <- levels(.resolve_response(specs))  # the training level order
     n   <- nrow(predictions[[1]])
     acc <- matrix(0, nrow = n, ncol = length(lev), dimnames = list(NULL, lev))
     for (b in seq_along(predictions)) {
@@ -100,13 +100,13 @@ setMethod(
     data      <- specs@data
     datasplit <- samples@data
     folds     <- seq_len(ncol(datasplit[["train"]]))
-    response  <- .response_name(svmcalls[[1]])  # constant: calls share the formula
+    y         <- .resolve_response(specs)  # constant: calls share the formula
 
     allkernels <- lapply(seq_along(svmcalls), function(k) {
       per <- lapply(folds, function(f) {
         .fit_one(specs, svmcalls[[k]], data,
                  datasplit[["train"]][, f], datasplit[["test"]][, f],
-                 metric_function, response)
+                 metric_function, y)
       })
       .assemble_fits(per)
     })
@@ -123,12 +123,12 @@ setMethod(
   function(samples, specs, svmcalls, metric_function, indexes, ...) {
     data      <- specs@data
     datasplit <- samples@bootData
-    response  <- .response_name(svmcalls[[1]])  # constant: calls share the formula
+    y         <- .resolve_response(specs)  # constant: calls share the formula
 
     per <- lapply(seq_along(indexes), function(i) {
       .fit_one(specs, svmcalls[[indexes[i]]], data,
                datasplit[["train"]][, i], datasplit[["test"]][, i],
-               metric_function, response)
+               metric_function, y)
     })
     .assemble_fits(per)
   }

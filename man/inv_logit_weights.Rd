@@ -4,18 +4,27 @@
 \alias{inv_logit_weights}
 \title{Inverse-logit weights (minimize-oriented)}
 \usage{
-inv_logit_weights(x)
+inv_logit_weights(x, chance = 0.5)
 }
 \arguments{
-\item{x}{numeric vector of scores in \verb{[0, 1]} (e.g. accuracy, Brier)}
+\item{x}{numeric vector of scores where lower is better (e.g. the Brier
+score, in \verb{[0, 2]})}
+
+\item{chance}{the score of an uninformative model. Default \code{0.5} (binary
+Brier score of a uniform prediction); \code{\link[=random_machines]{random_machines()}} binds
+\code{1 - 1/k} for probabilistic \code{k}-class tasks.}
 }
 \value{
 a raw numeric weight vector (not normalized)
 }
 \description{
-The minimize counterpart of \code{\link[=logit_weights]{logit_weights()}}, for a score in \verb{(0, 1)} where
-lower is better (e.g. a Brier score). Decreasing in \code{x}: a low score maps to a
-high weight. Applies no normalization; \code{x} is \code{eps}-clamped as a domain guard.
+The minimize counterpart of \code{\link[=logit_weights]{logit_weights()}}, for a score where lower is
+better (e.g. a Brier score), centered so a chance-level score maps to 0:
+\code{logit(chance) - logit(x)}. Decreasing in \code{x}: a low score maps to a high
+weight, and a worse-than-chance score to a negative weight (zeroed by the
+simplex projection). Applies no normalization; \code{x} is \code{eps}-clamped into
+\verb{(0, 1)} as a domain guard, and any score of 1 or more is already worse
+than chance, so the clamp only affects weights that are zeroed anyway.
 }
 \examples{
 inv_logit_weights(c(0.1, 0.3, 0.05))

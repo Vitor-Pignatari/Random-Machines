@@ -188,7 +188,8 @@ resample object they dispatch on.
 normalization. Final normalization lives in `lambdaCalc()` and `omegaCalc()`:
 
 - metrics reach the transforms on their **natural scale**: the classification
-  metrics (accuracy, Brier) live in `[0, 1]` by construction, and the regression
+  metrics live in a fixed range by construction (accuracy in `[0, 1]`, the
+  sum-over-classes Brier score in `[0, 2]`), and the regression
   default `softmax_weights` sd-standardizes its input internally
   (`exp(-beta * x / sd(x))`, Eqs. (1)-(2) of Ara, Maia, Louzada & Macêdo 2022,
   the regression random machines paper; default `beta = 2`, the paper's);
@@ -267,9 +268,11 @@ whole pipeline.
 **Unit tests** cover the pieces in isolation: the pure weight transforms and the
 normalization pipeline (`test-weights.R`), the built-in metrics and the metric
 contract (`test-metrics.R`), the resampling functions (`test-resample.R`), the two
-`svmFit` strategies (`test-fit.R`), stage-1 assembly (`test-KernelLambdas.R`), and
-the prediction and aggregation methods (`test-predict-methods.R`,
-`test-svm-methods.R`).
+`svmFit` strategies (`test-fit.R`), stage-1 assembly (`test-KernelLambdas.R`),
+spec building and fitting options (`test-random_machines.R`), assembly of the
+fitted object (`test-RandomMachines.R`), per-model prediction dispatch
+(`test-svm-methods.R`) and `predict()`'s input guards
+(`test-predict-methods.R`).
 
 **End-to-end tests** (`test-e2e.R`) fit `random_machines()` and score `predict()`
 on several datasets per task. Every case asserts two things: the output contract (a
@@ -286,8 +289,8 @@ Beyond the happy path, the end-to-end tests stress the pipeline on:
 - **Custom metrics.** User-supplied `function(truth, estimate)` metrics passed as
   `lambdaMetric`/`omegaMetric` for each task (balanced accuracy, MAE, log-loss), a
   bare metric with no `direction` attribute (whose orientation is inferred
-  empirically),
-  and an invalid metric rejected at construction.
+  empirically). Invalid metrics fail earlier, at construction, and are
+  covered by the unit tests.
 - **Ensemble size.** A range of `B` from 1 upward, checking the fitted object holds
   exactly `B` bootstrap models and that probabilistic output stays a distribution
   at every `B`.

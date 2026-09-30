@@ -541,14 +541,14 @@ RandomMachines <- function(specs, K = 1, store.cv.models = FALSE,
   ## inputs every downstream stage shares.
   svmcalls <- .call_builder(specs)
   data     <- specs@data
-  response <- .response_name(svmcalls[[1]])
 
   ## --- Stage 1: kernel lambdas -----------------------------------------
   ## Validate every kernel -- on a single 75/25 holdout split by default
   ## (K = 1, the papers' Algorithm 1) or across K folds -- and turn mean
   ## held-out performance into kernel selection probabilities. Classification
   ## splits are stratified on the response; regression rows are drawn at random.
-  strat_y <- if (specs@task %in% c("binary", "multiclass")) data[[response]] else NULL
+  ## The same response keeps bootstrap resamples from drawing a single class.
+  strat_y <- if (specs@task %in% c("binary", "multiclass")) .resolve_response(specs) else NULL
 
   kernelSamples <- KernelSamples(
     splitfun  = kfold_cv,
@@ -570,8 +570,10 @@ RandomMachines <- function(specs, K = 1, store.cv.models = FALSE,
   ## weight the models by their out-of-bag performance (omegas).
   bootSamples <- BootSamples(
     trainData = data,
-    bootArgs  = list(indexes = seq_len(nrow(data)), B = specs@B)
+    bootArgs  = list(indexes = seq_len(nrow(data)), B = specs@B, y = strat_y)
   )
+  ## As with splitargs: the response is already in specs@data.
+  bootSamples@bootArgs["y"] <- NULL
 
   bootOmegas <- BootOmegas(
     specs    = specs,

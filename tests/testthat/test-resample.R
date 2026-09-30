@@ -79,3 +79,26 @@ test_that("simple_bs returns bootstrap index + OOB matrices", {
     expect_identical(bs$test[, b], !(seq_len(n) %in% bs$train[, b]))
   }
 })
+
+test_that("simple_bs redraws resamples with an empty out-of-bag set", {
+  # n = 3: about 22% of plain draws cover every row (no OOB rows to score on)
+  set.seed(1)
+  bs <- simple_bs(indexes = 1:3, B = 200)
+  expect_true(all(colSums(bs$test) > 0))
+})
+
+test_that("simple_bs with y redraws single-class resamples", {
+  # 12-vs-3: about 3.5% of plain draws miss the rare class entirely
+  y <- factor(rep(c("a", "b"), c(12, 3)))
+  set.seed(1)
+  bs <- simple_bs(indexes = seq_along(y), B = 300, y = y)
+  n_classes <- apply(bs$train, 2, function(idx) length(unique(y[idx])))
+  expect_true(all(n_classes == 2))
+  expect_true(all(colSums(bs$test) > 0))
+})
+
+test_that("simple_bs fails clearly when no usable resample exists", {
+  expect_error(simple_bs(indexes = 1L, B = 1), "usable bootstrap resample")
+  expect_error(simple_bs(indexes = 1:4, B = 1, y = factor(rep("a", 4))),
+               "at least two classes")
+})

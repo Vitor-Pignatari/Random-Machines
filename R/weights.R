@@ -6,10 +6,10 @@
 ##
 ##   metrics --> f(., args) --> .to_simplex()   (both stages)
 ##
-## Metrics reach the transforms on their natural scale: the classification
-## metrics (accuracy, Brier) live in [0, 1] by construction, and the regression
-## default `softmax_weights()` sd-standardizes its input internally (Ara et al.
-## 2022, Eq. (1)).
+## Metrics reach the transforms on their natural scale: accuracy lives in
+## [0, 1] and the (sum-over-classes) Brier score in [0, 2] by construction, and
+## the regression default `softmax_weights()` sd-standardizes its input
+## internally (Ara et al. 2022, Eq. (1)).
 ##
 ## Orientation convention (metrics are NOT flipped, so the best
 ## model sits at x = 1 for a maximize metric and at x = 0 for a minimize metric):
@@ -118,35 +118,50 @@
 
 #' Logit weights (maximize-oriented)
 #'
-#' Shifted-logit transform for scores in `(0, 1)` where higher is better (e.g.
-#' accuracy). Increasing in `x`. Applies no normalization: the lambda and omega
-#' stages project the result onto the simplex (see [lambdaCalc()] /
-#' [omegaCalc()]). `x` is `eps`-clamped into `(0, 1)` as a domain guard.
+#' Logit transform for scores in `(0, 1)` where higher is better (e.g.
+#' accuracy), centered so a chance-level score maps to 0:
+#' `logit(x) - logit(chance)`. Increasing in `x`. A below-chance score gets a
+#' negative weight, which the pipeline's simplex projection zeroes (Eq. (8) of
+#' Ara et al. 2021, whose binary chance level is the default `0.5`). Applies
+#' no normalization: the lambda and omega stages project the result onto the
+#' simplex (see [lambdaCalc()] / [omegaCalc()]). `x` is `eps`-clamped into
+#' `(0, 1)` as a domain guard.
 #'
-#' @param x numeric vector of scores in `[0, 1]` (e.g. accuracy, Brier)
+#' @param x numeric vector of scores in `[0, 1]` (e.g. accuracy)
+#' @param chance the score of an uninformative model. Default `0.5` (binary
+#'   accuracy); [random_machines()] binds `1/k` for hard `k`-class tasks.
 #' @return a raw numeric weight vector (not normalized)
 #' @export
 #' @examples
 #' logit_weights(c(0.6, 0.8, 0.95))
-logit_weights <- function(x) {
+#' logit_weights(c(0.3, 0.45), chance = 1/5)  # 5 classes: both beat chance
+logit_weights <- function(x, chance = 0.5) {
   x <- .clamp01(x)
-  log(x / (1 - x))
+  log(x / (1 - x)) - log(chance / (1 - chance))
 }
 
 #' Inverse-logit weights (minimize-oriented)
 #'
-#' The minimize counterpart of [logit_weights()], for a score in `(0, 1)` where
-#' lower is better (e.g. a Brier score). Decreasing in `x`: a low score maps to a
-#' high weight. Applies no normalization; `x` is `eps`-clamped as a domain guard.
+#' The minimize counterpart of [logit_weights()], for a score where lower is
+#' better (e.g. a Brier score), centered so a chance-level score maps to 0:
+#' `logit(chance) - logit(x)`. Decreasing in `x`: a low score maps to a high
+#' weight, and a worse-than-chance score to a negative weight (zeroed by the
+#' simplex projection). Applies no normalization; `x` is `eps`-clamped into
+#' `(0, 1)` as a domain guard, and any score of 1 or more is already worse
+#' than chance, so the clamp only affects weights that are zeroed anyway.
 #'
-#' @param x numeric vector of scores in `[0, 1]` (e.g. accuracy, Brier)
+#' @param x numeric vector of scores where lower is better (e.g. the Brier
+#'   score, in `[0, 2]`)
+#' @param chance the score of an uninformative model. Default `0.5` (binary
+#'   Brier score of a uniform prediction); [random_machines()] binds
+#'   `1 - 1/k` for probabilistic `k`-class tasks.
 #' @return a raw numeric weight vector (not normalized)
 #' @export
 #' @examples
 #' inv_logit_weights(c(0.1, 0.3, 0.05))
-inv_logit_weights <- function(x) {
+inv_logit_weights <- function(x, chance = 0.5) {
   x <- .clamp01(x)
-  log((1 - x) / x)
+  log((1 - x) / x) - log((1 - chance) / chance)
 }
 
 #' Softmax weights (minimize-oriented, sd-standardized)
@@ -180,7 +195,7 @@ softmax_weights <- function(x, beta = 2) {
 #' (highest score) dominates. Maximize-oriented, increasing in `x`. Applies no
 #' normalization; `x` is `eps`-clamped below 1 so a perfect score stays finite.
 #'
-#' @param x numeric vector of scores in `[0, 1]` (e.g. accuracy, Brier)
+#' @param x numeric vector of scores in `[0, 1]` (e.g. accuracy)
 #' @return a finite, positive raw numeric weight vector (not normalized)
 #' @export
 #' @examples
@@ -195,14 +210,15 @@ inv_sq_gap_weights <- function(x) {
 #' `1 / x^2`: weight grows as the metric approaches 0, so the best model (lowest
 #' error/score) dominates. Minimize-oriented, decreasing in `x`. Applies no
 #' normalization; `x` is `eps`-clamped above 0 so a perfect (zero) score stays
-#' finite.
+#' finite. There is no upper clamp, so scores above 1 (a Brier score spans
+#' `[0, 2]`) keep their ordering.
 #'
-#' @param x numeric vector of error metrics in `[0, 1]` (e.g. Brier)
+#' @param x numeric vector of non-negative error metrics (e.g. the Brier score)
 #' @return a finite, positive raw numeric weight vector (not normalized)
 #' @export
 #' @examples
 #' inv_sq_weights(c(0.1, 0.3, 0.05))
 inv_sq_weights <- function(x) {
-  x <- .clamp01(x)
+  x <- pmax(x, 1e-8)
   1 / (x^2)
 }
